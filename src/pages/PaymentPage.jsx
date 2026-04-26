@@ -1,0 +1,377 @@
+import React, { useState } from 'react';
+import { CaretLeft, CreditCard, Wallet, Bank, Money } from '@phosphor-icons/react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { formatCurrency } from '../data/store';
+import { supabase } from '../lib/supabase';
+
+function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clearCart, setNotice, refreshProducts }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const shippingMethod = location.state?.shippingMethod || 'standard';
+  
+  const [coupon, setCoupon] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [storeSettings, setStoreSettings] = useState(null);
+
+  React.useEffect(() => {
+    supabase.from('settings').select('value').eq('key', 'store_settings').single().then(({ data }) => {
+      if (data) {
+        setStoreSettings(data.value);
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (storeSettings) {
+      const availableMethods = [];
+      if (storeSettings.upi_enabled) availableMethods.push('UPI');
+      if (storeSettings.card_enabled) availableMethods.push('Card');
+      if (storeSettings.netbanking_enabled) availableMethods.push('NetBanking');
+      if (storeSettings.cod_enabled) availableMethods.push('COD');
+
+      if (availableMethods.length > 0 && !availableMethods.includes(payment.method)) {
+        setPayment({ ...payment, method: availableMethods[0] });
+      }
+    }
+  }, [storeSettings, payment.method, setPayment]);
+
+  const shippingFee = shippingMethod === 'express' ? (storeSettings?.express_shipping_fee || 1500) : 0;
+  const codFee = storeSettings?.cod_fee || 100;
+
+  const applyCoupon = async (e) => {
+    e.preventDefault();
+    if (!coupon.trim()) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', coupon.toUpperCase())
+        .eq('is_active', true)
+        .single();
+      
+      if (error || !data) {
+        setNotice('Invalid coupon code');
+        setDiscount(0);
+        return;
+      }
+
+      // Check if expired
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        setNotice('This coupon has expired');
+        setDiscount(0);
+        return;
+      }
+
+      // Check max uses
+      if (data.max_uses && data.times_used >= data.max_uses) {
+        setNotice('This coupon has reached its usage limit');
+        setDiscount(0);
+        return;
+      }
+
+      const discountAmount = cartTotal * (data.discount_percent / 100);
+      setDiscount(discountAmount);
+      setNotice(`Coupon ${data.code} applied! ${data.discount_percent}% off`);
+    } catch (err) {
+      setNotice('Invalid coupon code');
+      setDiscount(0);
+    }
+  };
+
+  // Helper to load Razorpay SDK dynamically
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const processOrder = async (paymentDetails = null) => {
+    try {
+      // 1. Save order to Supabase
+      const orderData = {
+        customer_email: shipping.email || 'guest@chronyx.in',
+        customer_name: shipping.name || 'Guest',
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        })),
+        total_amount: payment.method === 'COD' ? finalTotal + codFee : finalTotal,
+        total: payment.method === 'COD' ? finalTotal + codFee : finalTotal,
+        status: payment.method === 'COD' ? 'pending' : 'paid',
+        shipping_address: {
+          address: shipping.address,
+          city: shipping.city,
+          pincode: shipping.pincode,
+          phone: shipping.phone || '',
+        },
+        payment_method: payment.method,
+        // If paid via Razorpay, save the payment ID
+        ...(paymentDetails && { razorpay_payment_id: paymentDetails.razorpay_payment_id })
+      };
+
+      const { data: insertedOrder, error } = await supabase.from('orders').insert([orderData]).select().single();
+      if (error) throw new Error(error.message || 'Order save error');
+
+      // 2. Decrement Stock for each item
+      for (const item of cartItems) {
+        const { error: stockErr } = await supabase.rpc('decrement_stock', { 
+          product_id: item.id, 
+          quantity: item.quantity 
+        });
+        if (stockErr) console.error('Failed to decrement stock:', stockErr);
+      }
+
+      // 3. Increment coupon usage if one was applied
+      if (discount > 0 && coupon.trim()) {
+        const { error: couponErr } = await supabase.rpc('increment_coupon_usage', { coupon_code: coupon.toUpperCase() });
+        if (couponErr) console.error('Failed to increment coupon:', couponErr);
+      }
+
+      // 4. Send Confirmation Email
+      // This is now handled automatically by the Supabase Database Webhook (Resend integration)
+      console.log('Order saved. Supabase webhook will trigger Resend email to:', orderData.customer_email);
+
+      if (refreshProducts) {
+        refreshProducts();
+      }
+
+      clearCart();
+      navigate('/confirmation', { state: { order: insertedOrder } });
+    } catch (err) {
+      console.error('Failed to process order:', err);
+    }
+  };
+
+  const handleNext = async (e) => {
+    e.preventDefault();
+    
+    if (payment.method === 'COD') {
+      // Direct processing for COD
+      await processOrder();
+    } else {
+      // Trigger Razorpay for online payments
+      const res = await loadRazorpay();
+      
+      if (!res) {
+        setNotice('Razorpay SDK failed to load. Are you online?');
+        return;
+      }
+
+      setNotice('Initializing secure payment...');
+
+      try {
+        // 1. Ask our secure Supabase Edge Function to create an official Razorpay Order
+        const { data: orderData, error } = await supabase.functions.invoke('create-razorpay-order', {
+          body: { amount: Math.round(finalTotal * 100) }
+        });
+
+        if (error || !orderData || !orderData.id) {
+          throw new Error('Could not create secure order. Check Razorpay keys in Supabase.');
+        }
+
+        // 2. Open the official Razorpay Checkout popup using the secure order_id
+        const rzpMethod = payment.method === 'Card' ? 'card' : 
+                          payment.method === 'UPI' ? 'upi' : 
+                          payment.method === 'NetBanking' ? 'netbanking' : '';
+
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use your LIVE key from .env here
+          amount: orderData.amount, 
+          currency: orderData.currency,
+          name: 'Chronyx',
+          description: 'Luxury Timepieces',
+          // image: '/favicon.svg', // Removed temporarily: causes Mixed Content CORS error on localhost
+          order_id: orderData.id, // THE CRITICAL PIECE FOR LIVE MODE
+          handler: function (response) {
+            // Payment Successful! Pass details to processOrder to save in database
+            processOrder(response);
+          },
+          prefill: {
+            name: shipping.name,
+            email: shipping.email,
+            contact: shipping.phone,
+            method: rzpMethod
+          },
+          theme: {
+            color: '#B38B59' // Brand accent color
+          }
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+
+      } catch (err) {
+        console.error('Razorpay Setup Error:', err);
+        setNotice('Payment initialization failed. Please try again.');
+      }
+    }
+  };
+
+  const finalTotal = cartTotal + shippingFee - discount;
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="page-stack">
+        <section className="page-header-panel">
+          <h1>Your cart is empty.</h1>
+          <Link className="primary-btn" style={{ marginTop: '14px' }} to="/">
+            Return home
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-stack">
+      <section className="page-header-panel">
+        <p className="label">Step 2 of 2</p>
+        <h1>Secure Payment</h1>
+      </section>
+      <section className="checkout-layout">
+        <div className="checkout-form-panel">
+          <div className="section-heading">
+            <h2>Select Payment Method</h2>
+            <p className="hero-text">All transactions are secure and encrypted.</p>
+          </div>
+
+          <div className="payment-switch" style={{ marginBottom: '24px' }}>
+            {(!storeSettings || storeSettings.upi_enabled) && (
+              <button
+                className={payment.method === 'UPI' ? 'payment-pill active' : 'payment-pill'}
+                onClick={() => setPayment({ ...payment, method: 'UPI' })}
+              >
+                UPI
+              </button>
+            )}
+            {(!storeSettings || storeSettings.card_enabled) && (
+              <button
+                className={payment.method === 'Card' ? 'payment-pill active' : 'payment-pill'}
+                onClick={() => setPayment({ ...payment, method: 'Card' })}
+              >
+                <CreditCard size={16} style={{ marginRight: '6px' }} /> Card
+              </button>
+            )}
+            {(!storeSettings || storeSettings.netbanking_enabled) && (
+              <button
+                className={payment.method === 'NetBanking' ? 'payment-pill active' : 'payment-pill'}
+                onClick={() => setPayment({ ...payment, method: 'NetBanking' })}
+              >
+                <Bank size={16} style={{ marginRight: '6px' }} /> Net Banking
+              </button>
+            )}
+            {(!storeSettings || storeSettings.cod_enabled) && (
+              <button
+                className={payment.method === 'COD' ? 'payment-pill active' : 'payment-pill'}
+                onClick={() => setPayment({ ...payment, method: 'COD' })}
+              >
+                <Money size={16} style={{ marginRight: '6px' }} /> COD
+              </button>
+            )}
+          </div>
+
+          <form className="form-grid" onSubmit={handleNext}>
+            {payment.method === 'Card' && (
+              <div className="full-span" style={{ padding: '16px', background: 'var(--surface-3)', borderRadius: '16px' }}>
+                <p style={{ margin: 0 }}>You will enter your credit or debit card details securely in the next step.</p>
+              </div>
+            )}
+
+            {payment.method === 'UPI' && (
+              <div className="full-span" style={{ padding: '16px', background: 'var(--surface-3)', borderRadius: '16px' }}>
+                <p style={{ margin: 0 }}>You will enter your UPI ID or scan a QR code securely in the next step.</p>
+              </div>
+            )}
+
+            {payment.method === 'NetBanking' && (
+              <div className="full-span" style={{ padding: '16px', background: 'var(--surface-3)', borderRadius: '16px' }}>
+                <p style={{ margin: 0 }}>You will select your bank and log in securely in the next step.</p>
+              </div>
+            )}
+
+            {payment.method === 'COD' && (
+              <div className="full-span" style={{ padding: '16px', background: 'var(--surface-3)', borderRadius: '16px' }}>
+                <p style={{ margin: 0 }}>You will pay in cash or via UPI when the delivery arrives. An extra {formatCurrency(codFee)} handling fee applies.</p>
+              </div>
+            )}
+
+            <div className="form-actions full-span" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+              <Link className="icon-btn" to="/checkout">
+                <CaretLeft size={18} />
+              </Link>
+              <button className="primary-btn" type="submit" style={{ flex: 1 }}>
+                Pay {formatCurrency(payment.method === 'COD' ? finalTotal + codFee : finalTotal)}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <aside className="summary-panel">
+          <p className="label">Order Summary</p>
+          <div className="cart-list-panel" style={{ margin: '16px 0' }}>
+            {cartItems.map((item) => (
+              <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <img src={item.hero} alt={item.name} style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }} />
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{item.name}</h4>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Qty: {item.quantity}</span>
+                </div>
+                <strong>{formatCurrency(item.lineTotal)}</strong>
+              </div>
+            ))}
+          </div>
+
+          <form onSubmit={applyCoupon} style={{ display: 'flex', gap: '8px', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--line)' }}>
+            <input 
+              type="text" 
+              placeholder="Enter promo code" 
+              value={coupon}
+              onChange={e => setCoupon(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="secondary-btn">Apply</button>
+          </form>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+            <span>Subtotal</span>
+            <strong>{formatCurrency(cartTotal)}</strong>
+          </div>
+          {discount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', color: 'var(--accent)' }}>
+              <span>Discount (LUXURY10)</span>
+              <strong>-{formatCurrency(discount)}</strong>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+            <span>Shipping ({shippingMethod})</span>
+            <strong>{shippingFee === 0 ? 'Free' : formatCurrency(shippingFee)}</strong>
+          </div>
+          {payment.method === 'COD' && (
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+             <span>COD Fee</span>
+             <strong>{formatCurrency(codFee)}</strong>
+           </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+            <span style={{ fontSize: '1.2rem' }}>Total</span>
+            <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{formatCurrency(payment.method === 'COD' ? finalTotal + codFee : finalTotal)}</h3>
+          </div>
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+export default PaymentPage;
