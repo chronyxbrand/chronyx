@@ -59,7 +59,7 @@ function AuthPage({ user }) {
         </p>
 
         {message.text && (
-          <div style={{ padding: '12px', background: message.type === 'error' ? 'var(--danger)' : 'var(--success)', color: 'white', borderRadius: '8px', marginBottom: '24px', fontSize: '0.9rem', textAlign: 'center' }}>
+          <div style={{ padding: '12px', background: message.type === 'error' ? 'var(--danger)' : '#388E3C', color: 'white', borderRadius: '8px', marginBottom: '24px', fontSize: '0.9rem', textAlign: 'center' }}>
             {message.text}
           </div>
         )}
