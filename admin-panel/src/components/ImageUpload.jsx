@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadSimple, X, Spinner } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, CrownSimple, Spinner, UploadSimple, X } from '@phosphor-icons/react';
 
 const ImageUpload = ({ images = [], onImagesChange }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -7,8 +7,8 @@ const ImageUpload = ({ images = [], onImagesChange }) => {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-  const handleUpload = async (e) => {
-    const files = e.target.files;
+  const handleUpload = async (event) => {
+    const files = event.target.files;
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -36,8 +36,7 @@ const ImageUpload = ({ images = [], onImagesChange }) => {
       alert('Failed to upload image. Please check your Cloudinary settings.');
     } finally {
       setIsUploading(false);
-      // Reset input so the same file can be selected again if needed
-      e.target.value = '';
+      event.target.value = '';
     }
   };
 
@@ -45,52 +44,104 @@ const ImageUpload = ({ images = [], onImagesChange }) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
   };
 
-  return (
-    <div style={{ marginBottom: '24px' }}>
-      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Product Images</label>
-      
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
-        {images.map((url, index) => (
-          <div key={index} style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-            <img src={url} alt={`Product ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <button 
-              type="button"
-              onClick={() => removeImage(index)}
-              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <X size={14} />
-            </button>
-            {index === 0 && (
-              <span style={{ position: 'absolute', bottom: '0', left: '0', right: '0', background: 'var(--accent-color)', color: 'var(--accent-text)', fontSize: '0.7rem', textAlign: 'center', padding: '2px 0', fontWeight: 'bold' }}>HERO</span>
-            )}
-          </div>
-        ))}
+  const moveImage = (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= images.length) return;
 
-        <label style={{ width: '120px', height: '120px', borderRadius: '8px', border: '2px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--bg-surface)', transition: 'border-color 0.2s' }}>
+    const nextImages = [...images];
+    [nextImages[index], nextImages[targetIndex]] = [nextImages[targetIndex], nextImages[index]];
+    onImagesChange(nextImages);
+  };
+
+  const setHeroImage = (index) => {
+    if (index === 0) return;
+    const nextImages = [...images];
+    const [heroImage] = nextImages.splice(index, 1);
+    nextImages.unshift(heroImage);
+    onImagesChange(nextImages);
+  };
+
+  return (
+    <div className="image-uploader">
+      <div className="image-uploader-stage">
+        {images[0] ? (
+          <img src={images[0]} alt="Hero preview" className="image-uploader-hero" />
+        ) : (
+          <div className="image-uploader-empty">
+            <UploadSimple size={24} />
+            <strong>No hero image yet</strong>
+            <p>Upload product images to preview the gallery and choose the storefront hero frame.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="image-uploader-toolbar">
+        <div>
+          <strong>{images.length} image{images.length === 1 ? '' : 's'}</strong>
+          <p>The first image becomes the product hero on the storefront.</p>
+        </div>
+        <label className="image-upload-trigger">
           {isUploading ? (
-            <Spinner size={24} className="spin" />
+            <>
+              <Spinner size={18} className="spin" />
+              Uploading...
+            </>
           ) : (
             <>
-              <UploadSimple size={24} color="var(--text-secondary)" style={{ marginBottom: '8px' }} />
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Upload</span>
+              <UploadSimple size={18} />
+              Upload Images
             </>
           )}
-          <input 
-            type="file" 
-            multiple 
-            accept="image/*" 
-            onChange={handleUpload} 
-            disabled={isUploading}
-            style={{ display: 'none' }} 
-          />
+          <input type="file" multiple accept="image/*" onChange={handleUpload} disabled={isUploading} />
         </label>
       </div>
-      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>The first image will be used as the primary hero image. Drag and drop to reorder (coming soon).</p>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}} />
+
+      {images.length > 0 ? (
+        <div className="image-thumb-grid">
+          {images.map((url, index) => (
+            <div key={`${url}-${index}`} className={`image-thumb-card ${index === 0 ? 'is-hero' : ''}`}>
+              <div className="image-thumb-media">
+                <img src={url} alt={`Product ${index + 1}`} />
+                {index === 0 ? (
+                  <span className="image-thumb-badge">
+                    <CrownSimple size={12} weight="fill" />
+                    Hero
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="image-thumb-actions">
+                <button type="button" className="btn-secondary" onClick={() => moveImage(index, -1)} disabled={index === 0}>
+                  <ArrowLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => moveImage(index, 1)}
+                  disabled={index === images.length - 1}
+                >
+                  <ArrowRight size={14} />
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setHeroImage(index)} disabled={index === 0}>
+                  Make Hero
+                </button>
+                <button type="button" className="btn-secondary image-remove-btn" onClick={() => removeImage(index)}>
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .spin { animation: spin 1s linear infinite; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+          `,
+        }}
+      />
     </div>
   );
 };

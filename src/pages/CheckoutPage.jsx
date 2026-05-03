@@ -50,8 +50,6 @@ function CheckoutPage({ cartItems, cartTotal, shipping, setShipping, user }) {
 
   const handleNext = (e) => {
     e.preventDefault();
-    // Pass the selected shipping method fee to next stage or global state
-    // Let's just navigate for prototype
     navigate('/payment', { state: { shippingMethod } });
   };
 

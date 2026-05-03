@@ -1,8 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowSquareOut, CaretLeft, DownloadSimple, Eye, FloppyDisk, Package, Palette, PlusCircle, Sparkle } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
-import { CaretLeft, FloppyDisk } from '@phosphor-icons/react';
+import {
+  buildPublicProductId,
+  buildUnitQrCodeUrl,
+  buildUnitVerificationUrl,
+  createAuthenticityUnit,
+} from '../lib/productIdentity';
+
+const defaultFormData = {
+  name: '',
+  description: '',
+  price: 0,
+  category: 'Wall Clocks',
+  tags: '',
+  stock_quantity: 10,
+  is_live: false,
+  is_limited_drop: false,
+  drop_date: '',
+  tagline: '',
+  size: '',
+  finish: '',
+  material: '',
+  movement_type: '',
+  summary: '',
+  story: '',
+  care_instructions: '',
+  features: '',
+};
+
+function InfoPill({ icon, label, value }) {
+  return (
+    <div className="product-editor-pill">
+      <span className="product-editor-pill-icon">{icon}</span>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <label className="settings-label product-editor-field">
+      <span>{label}</span>
+      {children}
+      {hint ? <small className="settings-hint">{hint}</small> : null}
+    </label>
+  );
+}
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -11,29 +60,12 @@ const ProductForm = () => {
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    category: 'Wall Clocks',
-    tags: '',
-    stock_quantity: 10,
-    is_live: false,
-    is_limited_drop: false,
-    drop_date: '',
-    tagline: '',
-    size: '',
-    finish: '',
-    material: '',
-    movement_type: '',
-    summary: '',
-    story: '',
-    care_instructions: '',
-    features: ''
-  });
-  
+  const [formData, setFormData] = useState(defaultFormData);
   const [images, setImages] = useState([]);
+  const [authUnits, setAuthUnits] = useState([]);
+  const [authError, setAuthError] = useState('');
+  const [syncingUnits, setSyncingUnits] = useState(false);
+  const [downloadingUnitId, setDownloadingUnitId] = useState('');
 
   useEffect(() => {
     if (isEditing) {
@@ -48,7 +80,7 @@ const ProductForm = () => {
         .select('*')
         .eq('id', id)
         .single();
-        
+
       if (productError) throw productError;
 
       const { data: productImages, error: imagesError } = await supabase
@@ -63,7 +95,7 @@ const ProductForm = () => {
         name: product.name,
         description: product.description || '',
         price: product.price,
-        category: product.category || '',
+        category: product.category || 'Wall Clocks',
         tags: product.tags ? product.tags.join(', ') : '',
         stock_quantity: product.stock_quantity,
         is_live: product.is_live,
@@ -75,13 +107,13 @@ const ProductForm = () => {
         material: product.material || '',
         movement_type: product.movement_type || '',
         summary: product.summary || '',
-        story: product.story || '',
+        story: product.story || product.description || '',
         care_instructions: product.care_instructions ? product.care_instructions.join('\n') : '',
-        features: product.features ? product.features.join('\n') : ''
+        features: product.features ? product.features.join('\n') : '',
       });
-      
-      setImages(productImages.map(img => img.image_url));
 
+      setImages((productImages || []).map((img) => img.image_url));
+      await loadAuthUnits(product.id);
     } catch (error) {
       console.error('Error fetching product:', error.message);
       alert('Error loading product');
@@ -91,26 +123,104 @@ const ProductForm = () => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
+  const loadAuthUnits = async (productId) => {
+    try {
+      const { data, error } = await supabase
+        .from('product_auth_units')
+        .select('*')
+        .eq('product_id', productId)
+        .order('serial_number', { ascending: true });
+
+      if (error) throw error;
+      setAuthUnits(data || []);
+      setAuthError('');
+      return data || [];
+    } catch (error) {
+      console.error('Error loading authenticity units:', error.message);
+      setAuthUnits([]);
+      setAuthError(error.message);
+      return [];
+    }
+  };
+
+  const syncAuthenticityUnits = async (productId, productName, stockTarget) => {
+    setSyncingUnits(true);
+    try {
+      const existingUnits = await loadAuthUnits(productId);
+      const desiredCount = Math.max(0, Number(stockTarget || 0));
+
+      if (existingUnits.length < desiredCount) {
+        const nextUnits = [];
+
+        for (let serialNumber = existingUnits.length + 1; serialNumber <= desiredCount; serialNumber += 1) {
+          nextUnits.push({
+            product_id: productId,
+            ...createAuthenticityUnit({ id: productId, name: productName }, serialNumber),
+          });
+        }
+
+        if (nextUnits.length > 0) {
+          const { error } = await supabase.from('product_auth_units').insert(nextUnits);
+          if (error) throw error;
+        }
+      }
+
+      await loadAuthUnits(productId);
+    } catch (error) {
+      console.error('Error syncing authenticity units:', error.message);
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setSyncingUnits(false);
+    }
+  };
+
+  const downloadUnitQr = async (unit) => {
+    setDownloadingUnitId(unit.id);
+
+    try {
+      const qrUrl = buildUnitQrCodeUrl(unit);
+      const response = await fetch(qrUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch QR image.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `${unit.public_unit_id}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error('Error downloading QR:', error.message);
+      alert(`Error downloading QR: ${error.message}`);
+    } finally {
+      setDownloadingUnitId('');
+    }
+  };
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFormData((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setSaving(true);
 
     try {
-      // 1. Prepare product data
       const productPayload = {
         name: formData.name,
-        description: formData.description,
+        description: formData.description || formData.story,
         price: Number(formData.price),
         category: formData.category,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        tags: formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
         stock_quantity: Number(formData.stock_quantity),
         is_live: formData.is_live,
         is_limited_drop: formData.is_limited_drop,
@@ -122,31 +232,21 @@ const ProductForm = () => {
         movement_type: formData.movement_type,
         summary: formData.summary,
         story: formData.story,
-        care_instructions: formData.care_instructions.split('\n').map(c => c.trim()).filter(Boolean),
-        features: formData.features.split('\n').map(f => f.trim()).filter(Boolean)
+        care_instructions: formData.care_instructions.split('\n').map((item) => item.trim()).filter(Boolean),
+        features: formData.features.split('\n').map((item) => item.trim()).filter(Boolean),
       };
 
       let productId = id;
 
-      // 2. Insert or Update Product
       if (isEditing) {
-        const { error } = await supabase
-          .from('products')
-          .update(productPayload)
-          .eq('id', productId);
+        const { error } = await supabase.from('products').update(productPayload).eq('id', productId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([productPayload])
-          .select()
-          .single();
+        const { data, error } = await supabase.from('products').insert([productPayload]).select().single();
         if (error) throw error;
         productId = data.id;
       }
 
-      // 3. Update Images (Simple approach: delete all and re-insert)
-      // Note: In production with many users, syncing is better than wipe/replace
       if (isEditing) {
         await supabase.from('product_images').delete().eq('product_id', productId);
       }
@@ -156,174 +256,430 @@ const ProductForm = () => {
           product_id: productId,
           image_url: url,
           is_hero: index === 0,
-          sort_order: index
+          sort_order: index,
         }));
 
-        const { error: imageError } = await supabase
-          .from('product_images')
-          .insert(imagePayload);
-          
+        const { error: imageError } = await supabase.from('product_images').insert(imagePayload);
         if (imageError) throw imageError;
       }
 
+      await syncAuthenticityUnits(productId, productPayload.name, productPayload.stock_quantity);
       alert('Product saved successfully!');
       navigate('/products');
-
     } catch (error) {
       console.error('Error saving product:', error.message);
-      alert('Error saving product: ' + error.message);
+      alert(`Error saving product: ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  const featureCount = useMemo(
+    () => formData.features.split('\n').map((item) => item.trim()).filter(Boolean).length,
+    [formData.features],
+  );
+  const careCount = useMemo(
+    () => formData.care_instructions.split('\n').map((item) => item.trim()).filter(Boolean).length,
+    [formData.care_instructions],
+  );
+  const visibleTags = formData.tags.split(',').map((item) => item.trim()).filter(Boolean);
+  const previewImage = images[0] || '';
+  const publicProductId = buildPublicProductId(id);
+  const issuedUnitCount = authUnits.length;
+  const missingUnitCount = Math.max(0, Number(formData.stock_quantity || 0) - issuedUnitCount);
+
+  if (loading) return <div>Loading product editor...</div>;
 
   return (
-    <div>
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn-secondary" style={{ padding: '8px' }} onClick={() => navigate('/products')}>
-            <CaretLeft size={20} />
+    <form className="product-editor-page" onSubmit={handleSubmit}>
+      <div className="page-header product-editor-header">
+        <div className="product-editor-title-row">
+          <button className="btn-secondary product-editor-back" type="button" onClick={() => navigate('/products')}>
+            <CaretLeft size={18} />
           </button>
-          <h2>{isEditing ? 'Edit Product' : 'Add New Product'}</h2>
+          <div>
+            <p className="settings-page-eyebrow">Catalog Editor</p>
+            <h2>{isEditing ? 'Edit Product' : 'Create Product'}</h2>
+            <p className="product-editor-subtitle">
+              Refine the product story, media, pricing, and launch state from one clean control surface.
+            </p>
+          </div>
         </div>
-        <button className="btn-primary" onClick={handleSubmit} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FloppyDisk size={20} /> {saving ? 'Saving...' : 'Save Product'}
+
+        <button className="btn-primary product-editor-save" type="submit" disabled={saving}>
+          <FloppyDisk size={18} />
+          {saving ? 'Saving...' : 'Save Product'}
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-        
-        {/* Left Column: Main Details */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>General Information</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Product Name</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. The Singularitas" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Tagline</label>
-                <input type="text" name="tagline" value={formData.tagline} onChange={handleChange} placeholder="e.g. The Ultimate Minimalist Statement" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Summary</label>
-                <textarea name="summary" value={formData.summary} onChange={handleChange} rows={2} placeholder="Short summary for the product page..."></textarea>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Story / Description</label>
-                <textarea name="story" value={formData.story} onChange={handleChange} rows={4} placeholder="Full product story..."></textarea>
-              </div>
-            </div>
-          </div>
+      <div className="product-editor-summary">
+        <InfoPill icon={<Package size={16} />} label="Status" value={formData.is_live ? 'Live on store' : 'Draft'} />
+        <InfoPill icon={<Sparkle size={16} />} label="Images" value={`${images.length} uploaded`} />
+        <InfoPill icon={<Palette size={16} />} label="Features" value={`${featureCount} product highlights`} />
+        <InfoPill icon={<Eye size={16} />} label="Care Notes" value={`${careCount} care lines`} />
+      </div>
 
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Specifications</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div className="product-editor-layout">
+        <div className="product-editor-main">
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Size</label>
-                <input type="text" name="size" value={formData.size} onChange={handleChange} placeholder="e.g. 46 cm" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Finish</label>
-                <input type="text" name="finish" value={formData.finish} onChange={handleChange} placeholder="e.g. Black Walnut" />
+                <p className="settings-panel-eyebrow">Core Copy</p>
+                <h3>General Information</h3>
+                <p>Set the main product identity customers see across the storefront.</p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Material</label>
-                <input type="text" name="material" value={formData.material} onChange={handleChange} placeholder="e.g. Black walnut, brushed brass" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Movement Type</label>
-                <input type="text" name="movement_type" value={formData.movement_type} onChange={handleChange} placeholder="e.g. Silent Sweep Quartz" />
-              </div>
+            <div className="settings-panel-body product-editor-grid">
+              <Field label="Product Name">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. The Singularitas"
+                />
+              </Field>
+              <Field label="Tagline">
+                <input
+                  type="text"
+                  name="tagline"
+                  value={formData.tagline}
+                  onChange={handleChange}
+                  placeholder="A sculptural statement for quiet interiors."
+                />
+              </Field>
+              <Field label="Short Summary" hint="Used in cards, lists, and compact product surfaces.">
+                <textarea
+                  name="summary"
+                  value={formData.summary}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Write a tight premium summary for the product listing."
+                />
+              </Field>
+              <Field label="Story / Long Description" hint="Used as the richer narrative on the product page.">
+                <textarea
+                  name="story"
+                  value={formData.story}
+                  onChange={handleChange}
+                  rows={6}
+                  placeholder="Tell the full product story, material feel, and design intent."
+                />
+              </Field>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Features (one per line)</label>
-                <textarea name="features" value={formData.features} onChange={handleChange} rows={4} placeholder="Silent sweep movement&#10;Hand-oiled finish"></textarea>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Care Instructions (one per line)</label>
-                <textarea name="care_instructions" value={formData.care_instructions} onChange={handleChange} rows={4} placeholder="Dust gently with a cloth.&#10;Avoid direct sunlight."></textarea>
-              </div>
-            </div>
-          </div>
+          </section>
 
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Media</h3>
-            <ImageUpload images={images} onImagesChange={setImages} />
-          </div>
-
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Pricing & Inventory</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Price (₹)</label>
-                <input type="number" name="price" value={formData.price} onChange={handleChange} min="0" required />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Stock Quantity</label>
-                <input type="number" name="stock_quantity" value={formData.stock_quantity} onChange={handleChange} min="0" required />
+                <p className="settings-panel-eyebrow">Technical Details</p>
+                <h3>Specifications</h3>
+                <p>Keep the product page structured and easy for customers to evaluate.</p>
               </div>
             </div>
-          </div>
+            <div className="settings-panel-body product-editor-grid product-editor-grid-half">
+              <Field label="Size">
+                <input type="text" name="size" value={formData.size} onChange={handleChange} placeholder="46 cm" />
+              </Field>
+              <Field label="Finish">
+                <input type="text" name="finish" value={formData.finish} onChange={handleChange} placeholder="Black walnut matte oil" />
+              </Field>
+              <Field label="Material">
+                <input type="text" name="material" value={formData.material} onChange={handleChange} placeholder="Walnut, brushed brass" />
+              </Field>
+              <Field label="Movement Type">
+                <input type="text" name="movement_type" value={formData.movement_type} onChange={handleChange} placeholder="Silent sweep quartz" />
+              </Field>
+              <Field label="Features" hint="One feature per line.">
+                <textarea
+                  name="features"
+                  value={formData.features}
+                  onChange={handleChange}
+                  rows={6}
+                  placeholder={'Silent sweep movement\nHand-oiled finish\nHeirloom-grade timber'}
+                />
+              </Field>
+              <Field label="Care Instructions" hint="One instruction per line.">
+                <textarea
+                  name="care_instructions"
+                  value={formData.care_instructions}
+                  onChange={handleChange}
+                  rows={6}
+                  placeholder={'Dust with a soft cloth\nAvoid direct sunlight\nKeep away from moisture'}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
+              <div>
+                <p className="settings-panel-eyebrow">Media</p>
+                <h3>Images</h3>
+                <p>The first image is treated as the hero image on the storefront.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body">
+              <ImageUpload images={images} onImagesChange={setImages} />
+            </div>
+          </section>
         </div>
 
-        {/* Right Column: Organization & Status */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Visibility</h3>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-              <input type="checkbox" name="is_live" checked={formData.is_live} onChange={handleChange} style={{ width: 'auto' }} />
-              <span style={{ fontWeight: formData.is_live ? 'bold' : 'normal', color: formData.is_live ? 'var(--success)' : 'inherit' }}>
-                {formData.is_live ? 'Live on Store' : 'Draft (Hidden)'}
-              </span>
-            </label>
-          </div>
-
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Organization</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <aside className="product-editor-side">
+          <section className="settings-panel product-editor-panel product-preview-panel">
+            <div className="settings-panel-header">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Category</label>
+                <p className="settings-panel-eyebrow">Live Preview</p>
+                <h3>Hero Snapshot</h3>
+                <p>Quick visual check of how the product feels before saving.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body">
+              <div className="product-preview-stage">
+                {previewImage ? (
+                  <img src={previewImage} alt={formData.name || 'Product preview'} />
+                ) : (
+                  <div className="product-preview-empty">Upload a hero image to preview the product here.</div>
+                )}
+              </div>
+              <div className="product-preview-copy">
+                <p className="label">{formData.category || 'Category'}</p>
+                <h4>{formData.name || 'Product name preview'}</h4>
+                <p>{formData.tagline || 'Your product tagline will appear here once added.'}</p>
+                <strong>INR {Number(formData.price || 0).toLocaleString('en-IN')}</strong>
+              </div>
+              {visibleTags.length > 0 ? (
+                <div className="product-preview-tags">
+                  {visibleTags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel product-auth-panel">
+            <div className="settings-panel-header">
+              <div>
+                <p className="settings-panel-eyebrow">Authenticity</p>
+                <h3>Certificate Inventory</h3>
+                <p>Issue one certificate per physical unit, download QR labels, and verify each piece individually.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body">
+              {id ? (
+                <div className="product-auth-registry">
+                  <div className="product-auth-registry-top">
+                    <div className="product-auth-item">
+                      <small>Model ID</small>
+                      <strong>{publicProductId}</strong>
+                    </div>
+                    <div className="product-auth-item">
+                      <small>Units issued</small>
+                      <strong>{issuedUnitCount}</strong>
+                    </div>
+                    <div className="product-auth-item">
+                      <small>Current stock target</small>
+                      <strong>{Number(formData.stock_quantity || 0)}</strong>
+                    </div>
+                    <div className="product-auth-item">
+                      <small>Missing certificates</small>
+                      <strong>{missingUnitCount}</strong>
+                    </div>
+                  </div>
+
+                  <div className="product-auth-toolbar">
+                    <p>
+                      Save the product to auto-issue any missing certificates. Extra certificates are preserved even if stock later decreases so sold units remain verifiable.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => syncAuthenticityUnits(id, formData.name, Number(formData.stock_quantity))}
+                      disabled={syncingUnits}
+                    >
+                      <PlusCircle size={18} />
+                      {syncingUnits ? 'Syncing Certificates...' : 'Generate Missing Certificates'}
+                    </button>
+                  </div>
+
+                  {authError ? (
+                    <div className="product-auth-empty">
+                      Authenticity registry unavailable. Run the SQL patch for `product_auth_units`, then refresh this editor. Current error: {authError}
+                    </div>
+                  ) : null}
+
+                  {authUnits.length > 0 ? (
+                    <div className="product-auth-unit-list">
+                      {authUnits.map((unit) => {
+                        const verificationUrl = buildUnitVerificationUrl(unit);
+                        const qrCodeUrl = buildUnitQrCodeUrl(unit);
+
+                        return (
+                          <article key={unit.id} className="product-auth-unit-card">
+                            <div className="product-auth-unit-preview">
+                              <img src={qrCodeUrl} alt={`QR for ${unit.public_unit_id}`} />
+                            </div>
+                            <div className="product-auth-unit-copy">
+                              <div className="product-auth-unit-meta">
+                                <small>Unit #{unit.serial_number}</small>
+                                <strong>{unit.public_unit_id}</strong>
+                              </div>
+                              <div className="product-auth-unit-meta">
+                                <small>Authenticity Code</small>
+                                <strong>{unit.authenticity_code}</strong>
+                              </div>
+                              <div className="product-auth-unit-meta">
+                                <small>Verification Link</small>
+                                <span>{verificationUrl}</span>
+                              </div>
+                              <div className="product-auth-unit-actions">
+                                <button
+                                  type="button"
+                                  className="btn-secondary"
+                                  onClick={() => downloadUnitQr(unit)}
+                                  disabled={downloadingUnitId === unit.id}
+                                >
+                                  <DownloadSimple size={18} />
+                                  {downloadingUnitId === unit.id ? 'Downloading...' : 'Download QR'}
+                                </button>
+                                <a
+                                  className="btn-secondary"
+                                  href={verificationUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <ArrowSquareOut size={18} />
+                                  Open Verify Page
+                                </a>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : !authError ? (
+                    <div className="product-auth-empty">
+                      No unit certificates have been issued yet. Save the product or generate the missing certificates to create QR-based authenticity records for each unit.
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="product-auth-empty">
+                  Save the product once to create its model ID and issue one downloadable authenticity certificate per stock unit.
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
+              <div>
+                <p className="settings-panel-eyebrow">Commerce</p>
+                <h3>Pricing & Inventory</h3>
+                <p>Manage price, stock, and storefront visibility safely.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body product-editor-grid">
+              <Field label="Price (INR)">
+                <input type="number" name="price" value={formData.price} onChange={handleChange} min="0" required />
+              </Field>
+              <Field label="Stock Quantity">
+                <input
+                  type="number"
+                  name="stock_quantity"
+                  value={formData.stock_quantity}
+                  onChange={handleChange}
+                  min="0"
+                  required
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
+              <div>
+                <p className="settings-panel-eyebrow">Catalog</p>
+                <h3>Organization</h3>
+                <p>Keep the product indexed correctly for discovery and filtering.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body product-editor-grid">
+              <Field label="Category">
                 <select name="category" value={formData.category} onChange={handleChange}>
                   <option value="Wall Clocks">Wall Clocks</option>
                   <option value="Desk Clocks">Desk Clocks</option>
                   <option value="Accessories">Accessories</option>
                 </select>
-              </div>
+              </Field>
+              <Field label="Tags" hint="Separate tags with commas.">
+                <input
+                  type="text"
+                  name="tags"
+                  value={formData.tags}
+                  onChange={handleChange}
+                  placeholder="minimalist, walnut, limited"
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Tags (comma separated)</label>
-                <input type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="e.g. minimalist, ash wood, new" />
+                <p className="settings-panel-eyebrow">Launch State</p>
+                <h3>Visibility & Drops</h3>
+                <p>Control whether this product is live and whether it belongs to a limited drop.</p>
               </div>
             </div>
-          </div>
+            <div className="settings-panel-body">
+              <div className="settings-toggle-stack">
+                <label className="settings-toggle-row">
+                  <div className="settings-toggle-copy">
+                    <strong>{formData.is_live ? 'Live on storefront' : 'Draft only'}</strong>
+                    <small>Turn this on when the product should appear to customers.</small>
+                  </div>
+                  <div className="settings-toggle-control">
+                    <span className={`settings-toggle-state ${formData.is_live ? 'is-on' : 'is-off'}`}>
+                      {formData.is_live ? 'On' : 'Off'}
+                    </span>
+                    <input type="checkbox" name="is_live" checked={formData.is_live} onChange={handleChange} />
+                  </div>
+                </label>
 
-          <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>Drops & Marketing</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="is_limited_drop" checked={formData.is_limited_drop} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>Mark as Limited Edition Drop</span>
-              </label>
-              
-              {formData.is_limited_drop && (
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Drop Date & Time</label>
-                  <input type="datetime-local" name="drop_date" value={formData.drop_date} onChange={handleChange} />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>This will enable the countdown timer and waitlist signup on the product page.</p>
+                <label className="settings-toggle-row">
+                  <div className="settings-toggle-copy">
+                    <strong>{formData.is_limited_drop ? 'Limited drop enabled' : 'Standard release'}</strong>
+                    <small>Use this to enable the countdown timer and drop framing on the product page.</small>
+                  </div>
+                  <div className="settings-toggle-control">
+                    <span className={`settings-toggle-state ${formData.is_limited_drop ? 'is-on' : 'is-off'}`}>
+                      {formData.is_limited_drop ? 'On' : 'Off'}
+                    </span>
+                    <input
+                      type="checkbox"
+                      name="is_limited_drop"
+                      checked={formData.is_limited_drop}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {formData.is_limited_drop ? (
+                <div className="product-editor-drop-date">
+                  <Field label="Drop Date & Time" hint="This powers the product countdown timer.">
+                    <input type="datetime-local" name="drop_date" value={formData.drop_date} onChange={handleChange} />
+                  </Field>
                 </div>
-              )}
+              ) : null}
             </div>
-          </div>
-        </div>
-
+          </section>
+        </aside>
       </div>
-    </div>
+    </form>
   );
 };
 

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
-const styles = StyleSheet.create({
+export const packingSlipStyles = StyleSheet.create({
   page: {
     padding: 40,
     fontFamily: 'Helvetica',
     fontSize: 10,
-    color: '#000000', // Pure black
+    color: '#000000',
   },
   headerRow: {
     flexDirection: 'row',
@@ -124,13 +124,6 @@ const styles = StyleSheet.create({
     width: '70%',
     lineHeight: 1.5,
   },
-  placeholderIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#E5E5E5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -142,135 +135,148 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 8,
     color: '#666666',
-  }
+  },
 });
 
-const PackingSlipPDF = ({ order }) => {
+function getPackingSlipData(order) {
   const safeOrder = order || {};
   const items = safeOrder.items || [];
-  const dateStr = safeOrder.created_at ? new Date(safeOrder.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
-  
-  const shortId = safeOrder.id ? safeOrder.id.slice(0, 8).toUpperCase() : 'XXXX';
-  const displayId = `KRX-2025-${shortId}`;
-  
-  const address = safeOrder.shipping_address || {};
+  const dateStr = safeOrder.created_at
+    ? new Date(safeOrder.created_at).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'N/A';
 
-  // Estimates
+  const shortId = safeOrder.id ? safeOrder.id.slice(0, 8).toUpperCase() : 'XXXX';
+  const displayId = `CRX-${new Date().getFullYear()}-${shortId}`;
+  const address = safeOrder.shipping_address || {};
   const totalQty = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
-  const totalWeight = (totalQty * 1.1).toFixed(1); // Avg 1.1kg per clock
+  const totalWeight = (totalQty * 1.1).toFixed(1);
+
+  return { safeOrder, items, dateStr, displayId, address, totalQty, totalWeight };
+}
+
+export function PackingSlipPage({ order }) {
+  const { safeOrder, items, dateStr, displayId, address, totalQty, totalWeight } = getPackingSlipData(order);
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.brandName}>PACKING SLIP</Text>
-            <Text style={styles.subtitle}>Chronyx · Handcrafted Wooden Timepieces</Text>
-          </View>
-          <View>
-            <Text style={styles.orderTitle}>Order #{displayId}</Text>
-            <Text style={styles.orderMeta}>{dateStr}</Text>
-            <Text style={styles.orderMeta}>Courier: DTDC · TRK: PENDING</Text>
-          </View>
+    <Page size="A4" style={packingSlipStyles.page}>
+      <View style={packingSlipStyles.headerRow}>
+        <View>
+          <Text style={packingSlipStyles.brandName}>PACKING SLIP</Text>
+          <Text style={packingSlipStyles.subtitle}>CHRONYX - Handcrafted Wooden Timepieces</Text>
+        </View>
+        <View>
+          <Text style={packingSlipStyles.orderTitle}>Order #{displayId}</Text>
+          <Text style={packingSlipStyles.orderMeta}>{dateStr}</Text>
+          <Text style={packingSlipStyles.orderMeta}>Courier: Pending - Tracking: Pending</Text>
+        </View>
+      </View>
+
+      <View style={packingSlipStyles.addressRow}>
+        <View style={packingSlipStyles.addressBlock}>
+          <Text style={packingSlipStyles.sectionTitle}>SHIP FROM</Text>
+          <Text style={packingSlipStyles.boldText}>CHRONYX</Text>
+          <Text style={packingSlipStyles.textLine}>Kanayannur, Kerala</Text>
+          <Text style={packingSlipStyles.textLine}>India - 682301</Text>
+          <Text style={packingSlipStyles.textLine}>+91 99999 00000</Text>
+        </View>
+        <View style={packingSlipStyles.addressBlock}>
+          <Text style={packingSlipStyles.sectionTitle}>SHIP TO</Text>
+          <Text style={packingSlipStyles.boldText}>{safeOrder.customer_name || 'Customer'}</Text>
+          <Text style={packingSlipStyles.textLine}>{address.address || 'Address not provided'}</Text>
+          {address.city ? (
+            <Text style={packingSlipStyles.textLine}>
+              {address.city} - {address.pincode}
+            </Text>
+          ) : null}
+          {address.phone ? <Text style={packingSlipStyles.textLine}>{address.phone}</Text> : null}
+        </View>
+      </View>
+
+      <View style={packingSlipStyles.table}>
+        <View style={packingSlipStyles.tableHeaderRow}>
+          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colItem]}>ITEM</Text>
+          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colQty]}>QTY</Text>
+          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colWeight]}>WEIGHT</Text>
+          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colCheck]}>CHECK</Text>
         </View>
 
-        {/* Addresses */}
-        <View style={styles.addressRow}>
-          <View style={styles.addressBlock}>
-            <Text style={styles.sectionTitle}>SHIP FROM</Text>
-            <Text style={styles.boldText}>Chronyx</Text>
-            <Text style={styles.textLine}>Kanayannur, Kerala</Text>
-            <Text style={styles.textLine}>India — 682301</Text>
-            <Text style={styles.textLine}>+91 99999 00000</Text>
-          </View>
-          <View style={styles.addressBlock}>
-            <Text style={styles.sectionTitle}>SHIP TO</Text>
-            <Text style={styles.boldText}>{safeOrder.customer_name || 'Customer'}</Text>
-            <Text style={styles.textLine}>{address.address || 'Address not provided'}</Text>
-            {address.city ? <Text style={styles.textLine}>{address.city} — {address.pincode}</Text> : null}
-            {address.phone && <Text style={styles.textLine}>{address.phone}</Text>}
-          </View>
-        </View>
+        {items.map((item, index) => {
+          const isWalnut = item.name?.toLowerCase().includes('walnut');
+          const sku = `CRX-${isWalnut ? 'WN' : 'TK'}-00${index + 1}`;
+          const estWeight = isWalnut ? '1.2 kg' : '1.0 kg';
 
-        {/* Items Table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, styles.colItem]}>ITEM</Text>
-            <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY</Text>
-            <Text style={[styles.tableHeaderCell, styles.colWeight]}>WEIGHT</Text>
-            <Text style={[styles.tableHeaderCell, styles.colCheck]}>CHECK</Text>
-          </View>
-
-          {items.map((item, index) => {
-            const isWalnut = item.name?.toLowerCase().includes('walnut');
-            const sku = `CRX-${isWalnut ? 'WN' : 'TK'}-00${index + 1}`;
-            const estWeight = isWalnut ? '1.2 kg' : '1.0 kg';
-
-            return (
-              <View key={index} style={styles.tableRow}>
-                <View style={styles.colItem}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDesc}>SKU: {sku}</Text>
-                </View>
-                <View style={[styles.colQty, { justifyContent: 'center' }]}>
-                  <Text>{item.quantity}</Text>
-                </View>
-                <View style={[styles.colWeight, { justifyContent: 'center' }]}>
-                  <Text>~{estWeight}</Text>
-                </View>
-                <View style={styles.colCheck}>
-                  <View style={styles.checkbox} />
-                </View>
+          return (
+            <View key={`${item.name || 'item'}-${index}`} style={packingSlipStyles.tableRow}>
+              <View style={packingSlipStyles.colItem}>
+                <Text style={packingSlipStyles.itemName}>{item.name}</Text>
+                <Text style={packingSlipStyles.itemDesc}>SKU: {sku}</Text>
               </View>
-            );
-          })}
+              <View style={[packingSlipStyles.colQty, { justifyContent: 'center' }]}>
+                <Text>{item.quantity}</Text>
+              </View>
+              <View style={[packingSlipStyles.colWeight, { justifyContent: 'center' }]}>
+                <Text>~{estWeight}</Text>
+              </View>
+              <View style={packingSlipStyles.colCheck}>
+                <View style={packingSlipStyles.checkbox} />
+              </View>
+            </View>
+          );
+        })}
 
-          <View style={[styles.tableRow, styles.totalRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.colItem, { paddingVertical: 12 }]}>
-              <Text style={styles.itemName}>Total items</Text>
-            </View>
-            <View style={[styles.colQty, { paddingVertical: 12, justifyContent: 'center' }]}>
-              <Text style={{ fontFamily: 'Helvetica-Bold' }}>{totalQty}</Text>
-            </View>
-            <View style={[styles.colWeight, { paddingVertical: 12, justifyContent: 'center' }]}>
-              <Text>~{totalWeight} kg</Text>
-            </View>
-            <View style={styles.colCheck} />
+        <View style={[packingSlipStyles.tableRow, packingSlipStyles.totalRow, { borderBottomWidth: 0 }]}>
+          <View style={[packingSlipStyles.colItem, { paddingVertical: 12 }]}>
+            <Text style={packingSlipStyles.itemName}>Total items</Text>
           </View>
+          <View style={[packingSlipStyles.colQty, { paddingVertical: 12, justifyContent: 'center' }]}>
+            <Text style={{ fontFamily: 'Helvetica-Bold' }}>{totalQty}</Text>
+          </View>
+          <View style={[packingSlipStyles.colWeight, { paddingVertical: 12, justifyContent: 'center' }]}>
+            <Text>~{totalWeight} kg</Text>
+          </View>
+          <View style={packingSlipStyles.colCheck} />
         </View>
+      </View>
 
-        {/* Packing Notes */}
-        <View style={styles.notesBox}>
-          <View style={styles.notesText}>
-            <Text style={styles.sectionTitle}>PACKING NOTES</Text>
-            <Text>Fragile — wooden clock. Wrap in bubble wrap. Keep upright. Handle with care. Do not stack heavy items on top.</Text>
-          </View>
-          <View style={{ alignItems: 'center' }}>
-            {/* Fake QR code placeholder box for visual similarity */}
-            <View style={{ width: 40, height: 40, flexWrap: 'wrap', flexDirection: 'row', gap: 2, marginBottom: 4 }}>
-              {[...Array(4)].map((_, i) => <View key={i} style={{ width: 18, height: 18, backgroundColor: '#000' }} />)}
-            </View>
-            <Text style={{ fontSize: 7, color: '#666', letterSpacing: 1 }}>SCAN TO VERIFY</Text>
-          </View>
+      <View style={packingSlipStyles.notesBox}>
+        <View style={packingSlipStyles.notesText}>
+          <Text style={packingSlipStyles.sectionTitle}>PACKING NOTES</Text>
+          <Text>
+            Fragile wooden clock. Wrap in bubble wrap. Keep upright. Handle with care. Do not stack heavy items on top.
+          </Text>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View>
-            <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>CHRONYX</Text>
-            <Text style={styles.footerText}>Time, carved from wood.</Text>
+        <View style={{ alignItems: 'center' }}>
+          <View style={{ width: 40, height: 40, flexWrap: 'wrap', flexDirection: 'row', gap: 2, marginBottom: 4 }}>
+            {[...Array(4)].map((_, i) => (
+              <View key={i} style={{ width: 18, height: 18, backgroundColor: '#000' }} />
+            ))}
           </View>
-          <View>
-            <Text style={[styles.footerText, { textAlign: 'right', marginBottom: 4 }]}>chronyxbrand@gmail.com</Text>
-            <Text style={[styles.footerText, { textAlign: 'right' }]}>chronyx.in · @chronyx</Text>
-          </View>
+          <Text style={{ fontSize: 7, color: '#666666', letterSpacing: 1 }}>SCAN TO VERIFY</Text>
         </View>
+      </View>
 
-      </Page>
-    </Document>
+      <View style={packingSlipStyles.footer}>
+        <View>
+          <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>CHRONYX</Text>
+          <Text style={packingSlipStyles.footerText}>Time, carved from wood.</Text>
+        </View>
+        <View>
+          <Text style={[packingSlipStyles.footerText, { textAlign: 'right', marginBottom: 4 }]}>chronyxbrand@gmail.com</Text>
+          <Text style={[packingSlipStyles.footerText, { textAlign: 'right' }]}>chronyx.in - @chronyx</Text>
+        </View>
+      </View>
+    </Page>
   );
-};
+}
+
+const PackingSlipPDF = ({ order }) => (
+  <Document>
+    <PackingSlipPage order={order} />
+  </Document>
+);
 
 export default PackingSlipPDF;

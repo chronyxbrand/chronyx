@@ -4,13 +4,15 @@ import { formatCurrency } from '../data/store';
 import { Heart } from '@phosphor-icons/react';
 import SEO from '../components/SEO';
 
-function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [] }) {
+function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [], collections = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const showWishlistOnly = searchParams.get('wishlist') === 'true';
+  const collectionSlug = searchParams.get('collection') || '';
   
   const [sortBy, setSortBy] = useState('featured');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterCollection, setFilterCollection] = useState(collectionSlug || 'All');
   const [isLoading, setIsLoading] = useState(true);
 
   // Fake network delay for skeleton loading
@@ -18,9 +20,20 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
     setIsLoading(true);
     const timer = setTimeout(() => setIsLoading(false), 600);
     return () => clearTimeout(timer);
-  }, [query, showWishlistOnly, filterCategory, sortBy]);
+  }, [query, showWishlistOnly, filterCategory, filterCollection, sortBy]);
 
   const categories = ['All', ...new Set(products.map(p => p.category))];
+  const collectionOptions = ['All', ...collections.filter(c => c.is_visible).map(c => c.slug)];
+  const productCollectionMap = useMemo(() => {
+    const map = new Map();
+    collections.forEach((collection) => {
+      (collection.collection_products || []).forEach((entry) => {
+        if (!map.has(entry.product_id)) map.set(entry.product_id, []);
+        map.get(entry.product_id).push(collection.slug);
+      });
+    });
+    return map;
+  }, [collections]);
 
   const filteredProducts = useMemo(() => {
     let result = products;
@@ -42,6 +55,10 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
       result = result.filter(p => p.category === filterCategory);
     }
 
+    if (filterCollection !== 'All') {
+      result = result.filter((p) => (productCollectionMap.get(p.id) || []).includes(filterCollection));
+    }
+
     if (sortBy === 'price-low') {
       result = [...result].sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-high') {
@@ -49,7 +66,11 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
     }
 
     return result;
-  }, [query, showWishlistOnly, filterCategory, sortBy, wishlist]);
+  }, [query, showWishlistOnly, filterCategory, filterCollection, sortBy, wishlist, products, productCollectionMap]);
+
+  useEffect(() => {
+    setFilterCollection(collectionSlug || 'All');
+  }, [collectionSlug]);
 
   return (
     <div className="page-stack">
@@ -75,6 +96,28 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label htmlFor="collectionFilter" className="label" style={{ marginRight: '8px' }}>Collection:</label>
+              <select
+                id="collectionFilter"
+                value={filterCollection}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setFilterCollection(next);
+                  const nextParams = new URLSearchParams(searchParams);
+                  if (next === 'All') nextParams.delete('collection');
+                  else nextParams.set('collection', next);
+                  setSearchParams(nextParams);
+                }}
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', color: 'var(--text)', padding: '6px 12px', borderRadius: '8px' }}
+              >
+                {collectionOptions.map((slug) => (
+                  <option key={slug} value={slug}>
+                    {slug === 'All' ? 'All Collections' : collections.find((collection) => collection.slug === slug)?.title || slug}
+                  </option>
                 ))}
               </select>
             </div>
@@ -111,6 +154,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                 onClick={() => {
                   setSearchParams({});
                   setFilterCategory('All');
+                  setFilterCollection('All');
                 }}
               >
                 Clear all filters
@@ -144,9 +188,9 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                   <h3>{product.name}</h3>
                   <div className="stock-row">
                     <div className="battery-bar">
-                      <div style={{ width: `${product.stockPercent}%` }} />
+                      <div style={{ width: `${product.stockLevelPercent || 0}%` }} />
                     </div>
-                    <small>{product.stockPercent}% stock remaining</small>
+                    <small>Only {product.stockQuantity || 0} items remaining</small>
                   </div>
                   <div className="product-bottom" style={{ marginTop: 'auto' }}>
                     <div>

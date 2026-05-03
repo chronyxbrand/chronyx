@@ -3,10 +3,11 @@ import { CaretLeft, CaretRight, Truck } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 
-function CartPage({ cartItems, cartTotal, updateCartQuantity, clearCart, user }) {
-  const freeShippingThreshold = 50000;
-  const amountToFreeShipping = freeShippingThreshold - cartTotal;
-  const progressPercent = Math.min(100, (cartTotal / freeShippingThreshold) * 100);
+function CartPage({ cartItems, cartTotal, updateCartQuantity, clearCart, user, storeSettings }) {
+  const freeShippingThreshold = Number(storeSettings?.free_shipping_threshold || 50000);
+  const amountToFreeShipping = Math.max(0, freeShippingThreshold - cartTotal);
+  const progressPercent =
+    freeShippingThreshold > 0 ? Math.min(100, (cartTotal / freeShippingThreshold) * 100) : 100;
 
   return (
     <div className="page-stack">
@@ -21,8 +22,8 @@ function CartPage({ cartItems, cartTotal, updateCartQuantity, clearCart, user })
             <Truck size={24} color="var(--accent)" />
             <strong>
               {amountToFreeShipping > 0 
-                ? `Add ${formatCurrency(amountToFreeShipping)} more for FREE Express Shipping.` 
-                : "You've unlocked FREE Express Shipping!"}
+                ? `Add ${formatCurrency(amountToFreeShipping)} more for free standard shipping.`
+                : "You've unlocked free standard shipping!"}
             </strong>
           </div>
           <div className="battery-bar" style={{ height: '8px', background: 'var(--surface-3)' }}>

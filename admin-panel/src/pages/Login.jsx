@@ -13,6 +13,12 @@ const Login = () => {
     setLoading(true);
     setErrorMsg('');
 
+    if (email.toLowerCase() !== 'chronyxbrand@gmail.com') {
+      setErrorMsg('Unauthorized: This portal is restricted to the store owner.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
 // Register fonts if needed. Helvetica is built-in and works well for simple docs.
 
@@ -176,19 +176,15 @@ const InvoicePDF = ({ order }) => {
   const dateStr = safeOrder.created_at ? new Date(safeOrder.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
   
   // Calculations
-  const shippingFee = (safeOrder.total || 0) > 0 && safeOrder.payment_method === 'COD' ? 100 : 0; // simplistic fallback, ideally we have exact shipping stored
-  // A better way: total - sum(items)
   const itemsSum = items.reduce((acc, item) => acc + (item.lineTotal || 0), 0);
   const diff = (safeOrder.total || 0) - itemsSum;
-  // Let's assume if diff is positive, it's shipping. If negative, it's discount. 
-  // In a real app we'd save exact shipping/discount on the order row.
   let shipping = 0;
   let discount = 0;
   if (diff > 0) shipping = diff;
   if (diff < 0) discount = Math.abs(diff);
 
   const shortId = safeOrder.id ? safeOrder.id.slice(0, 8).toUpperCase() : 'XXXX';
-  const invoiceNo = `INV-2025-${shortId}`;
+  const invoiceNo = `INV-${new Date().getFullYear()}-${shortId}`;
 
   const address = safeOrder.shipping_address || {};
 
@@ -304,7 +300,7 @@ const InvoicePDF = ({ order }) => {
             {safeOrder.razorpay_payment_id && (
               <Text style={styles.footerText}>Ref: {safeOrder.razorpay_payment_id}</Text>
             )}
-            <Text style={[styles.footerText, { marginTop: 4 }]}>Thank you for choosing Chronyx.</Text>
+        <Text style={[styles.footerText, { marginTop: 4 }]}>Thank you for choosing CHRONYX.</Text>
             <Text style={styles.footerText}>For support: chronyxbrand@gmail.com</Text>
           </View>
           <View>

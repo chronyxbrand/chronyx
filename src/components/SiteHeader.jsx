@@ -1,86 +1,93 @@
-import React, { useState } from 'react';
-import { Moon, ShoppingBagOpen, SunDim, List, X, MagnifyingGlass, Heart, User } from '@phosphor-icons/react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { List, ShoppingBagOpen, X } from '@phosphor-icons/react';
+import { Link, useLocation } from 'react-router-dom';
 
-function SiteHeader({ cartCount, theme, setTheme, notice, setNotice, wishlistCount, user }) {
+const navigationLinks = [
+  { label: 'Shop', path: '/shop' },
+  { label: 'About', path: '/about' },
+  { label: 'Contact', path: '/contact' },
+];
+
+function SiteHeader({ cartCount, notice, setNotice, storeName = 'CHRONYX', user = null }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const location = useLocation();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?q=${encodeURIComponent(searchQuery)}`);
-      setIsSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
-      <header className="site-header">
+      <header className={`site-header site-header-v2 ${isScrolled ? 'scrolled' : 'top'}`}>
         <div className="header-left">
-          <button className="icon-btn mobile-only hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <Link className="brand-wordmark" to="/" aria-label={`${storeName} Home`}>
+            {storeName}
+          </Link>
+        </div>
+
+        <div className="header-center" />
+
+        <div className="header-right">
+          <nav className="site-nav desktop-nav">
+            {navigationLinks.map((link) => (
+              <Link key={link.path} to={link.path}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="header-actions">
+            <Link
+              className="account-link"
+              to={user ? '/account' : '/auth'}
+              aria-label={user ? 'My Account' : 'Sign In'}
+            >
+              <span>{user ? 'Account' : 'Sign In'}</span>
+            </Link>
+            <Link className="cart-link" to="/cart" aria-label="Cart">
+              <ShoppingBagOpen size={18} />
+              <span>{cartCount}</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="header-mobile-actions">
+          <button
+            className="icon-btn mobile-only hamburger"
+            onClick={() => setIsMenuOpen((current) => !current)}
+            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          >
             {isMenuOpen ? <X size={18} /> : <List size={18} />}
           </button>
-          <Link className="brand-wordmark" to="/" aria-label="Chronyx Home">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="120" height="24">
-              <text x="0" y="30" font-family="var(--font-display)" font-size="28" font-weight="bold" fill="currentColor" letter-spacing="4">CHRONYX</text>
-            </svg>
-          </Link>
         </div>
-
-        <nav className={`site-nav ${isMenuOpen ? 'mobile-open' : ''}`}>
-          <Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
-          <Link to="/shop" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-          <Link to="/about" onClick={() => setIsMenuOpen(false)}>About</Link>
-          <Link to="/blog" onClick={() => setIsMenuOpen(false)}>Journal</Link>
-          <Link to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link>
-        </nav>
-        
-        <div className="header-actions">
-          <button className="icon-btn search-toggle" onClick={() => setIsSearchOpen(!isSearchOpen)}>
-            <MagnifyingGlass size={18} />
-          </button>
-
-          <Link className="icon-btn wishlist-toggle" to="/shop?wishlist=true">
-             <Heart size={18} weight={wishlistCount > 0 ? 'fill' : 'regular'} />
-             {wishlistCount > 0 && <span className="badge-count">{wishlistCount}</span>}
-          </Link>
-
-          <Link to={user ? "/account" : "/auth"} className="icon-btn" aria-label="Account">
-            <User size={22} weight="light" />
-          </Link>
-
-          <button
-            className="icon-btn theme-toggle"
-            aria-label="Toggle theme"
-            onClick={() => setTheme((current) => (current === 'maple' ? 'night' : 'maple'))}
-          >
-            {theme === 'maple' ? <Moon size={18} weight="fill" /> : <SunDim size={18} weight="fill" />}
-          </button>
-          <Link className="cart-link" to="/cart">
-            <ShoppingBagOpen size={18} />
-            <span>{cartCount}</span>
-          </Link>
-        </div>
-
-        {isSearchOpen && (
-          <div className="search-bar-container">
-            <form onSubmit={handleSearch}>
-              <input 
-                type="text" 
-                placeholder="Search products..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-              />
-              <button type="submit"><MagnifyingGlass size={18} /></button>
-            </form>
-          </div>
-        )}
       </header>
+
+      {isMenuOpen ? (
+        <div className="mobile-nav-panel">
+          <nav className="site-nav mobile-nav">
+            {navigationLinks.map((link) => (
+              <Link key={link.path} to={link.path}>
+                {link.label}
+              </Link>
+            ))}
+            <Link to={user ? '/account' : '/auth'}>
+              {user ? 'Account' : 'Sign In'}
+            </Link>
+          </nav>
+        </div>
+      ) : null}
+
       {notice ? (
         <button className="notice-pill" onClick={() => setNotice('')}>
           {notice}

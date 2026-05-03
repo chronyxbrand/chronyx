@@ -1,214 +1,319 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle, Lock, Truck, Star } from '@phosphor-icons/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Cube, Gauge, MoonStars } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
-import { founderQuote, formatCurrency, homeHighlights } from '../data/store';
+import { formatCurrency } from '../data/store';
 import SEO from '../components/SEO';
 
-function HomePage({ addToCart, deliveryDate, setNotice, products = [] }) {
-  const [urgencyCount, setUrgencyCount] = useState(5);
+function HomePage({ products = [], siteContent }) {
+  const homepageContent = siteContent?.homepageContent || {};
+  const aboutPageContent = siteContent?.aboutPageContent || {};
+  const testimonials = homepageContent.testimonials || [];
+
+  const [heroScale, setHeroScale] = useState(1);
+  const [activeProcessIndex, setActiveProcessIndex] = useState(0);
+
+  const heroProduct = products[0] || null;
+  const featureProduct = products[1] || products[0] || null;
+  const shopPreview = products.slice(0, 4);
+
+  const fallbackHeroImage =
+    heroProduct?.gallery?.find((image) => image && image !== heroProduct?.hero) ||
+    heroProduct?.hero ||
+    '';
+
+  const fallbackFeatureImage =
+    featureProduct?.gallery?.find((image) => image && image !== featureProduct?.hero) ||
+    featureProduct?.hero ||
+    fallbackHeroImage;
+
+  const heroImage = homepageContent.heroImage || fallbackHeroImage;
+  const signatureImage = homepageContent.signatureImage || heroProduct?.hero || fallbackHeroImage;
+  const featureImage = homepageContent.secondaryFeatureImage || fallbackFeatureImage;
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setUrgencyCount(Math.floor(Math.random() * 6) + 3);
-    }, 4000);
-    return () => window.clearInterval(interval);
+    const handleScroll = () => {
+      const offset = Math.min(window.scrollY / 1400, 0.05);
+      setHeroScale(1 + offset);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const processSteps = useMemo(
+    () => {
+      const makingOfItems = aboutPageContent?.makingOfItems || [];
+
+      return [
+        {
+          label: 'Design',
+          title: makingOfItems[0]?.title || 'Designing the silhouette',
+          description:
+            makingOfItems[0]?.text ||
+            'Every clock begins as a proportion study where the dial, markers, and material tone are balanced for calm modern interiors.',
+          image: homepageContent.processDesignImage || makingOfItems[0]?.img || heroImage,
+        },
+        {
+          label: 'Material',
+          title: makingOfItems[1]?.title || 'Selecting the material',
+          description:
+            makingOfItems[1]?.text ||
+            'We choose timber and components for grain character, stability, and the quiet visual warmth the final piece should carry.',
+          image: homepageContent.processMaterialImage || makingOfItems[1]?.img || featureImage || heroImage,
+        },
+        {
+          label: 'Craft',
+          title: makingOfItems[2]?.title || 'Precision shaping and assembly',
+          description:
+            makingOfItems[2]?.text ||
+            'The body is cut, refined, and assembled with close attention to edge quality, movement fit, and how the piece sits in the room.',
+          image: homepageContent.processCraftImage || makingOfItems[2]?.img || heroProduct?.hero || heroImage,
+        },
+        {
+          label: 'Finish',
+          title: 'Final finishing touches',
+          description:
+            'The last pass focuses on surface feel, tone balance, and a final quality check so the piece arrives ready to anchor the wall beautifully.',
+          image:
+            homepageContent.processFinishImage ||
+            heroProduct?.gallery?.[1] ||
+            featureProduct?.gallery?.[1] ||
+            featureProduct?.hero ||
+            heroImage,
+        },
+      ];
+    },
+    [
+      aboutPageContent?.makingOfItems,
+      featureImage,
+      featureProduct?.gallery,
+      featureProduct?.hero,
+      heroImage,
+      heroProduct?.gallery,
+      heroProduct?.hero,
+      homepageContent.processCraftImage,
+      homepageContent.processDesignImage,
+      homepageContent.processFinishImage,
+      homepageContent.processMaterialImage,
+    ],
+  );
+
+  const activeProcessStep = processSteps[activeProcessIndex] || processSteps[0];
+
   return (
-    <div className="page-stack">
-      <SEO 
-        title="Luxury Wooden Wall Clocks" 
-        description="CHRONYX presents premium wooden clocks crafted like heirloom objects. Explore our exclusive collections." 
+    <div className="page-stack home-page home-page-v2">
+      <SEO
+        title="Luxury Wooden Wall Clocks"
+        description="Minimal wall clocks by CHRONYX. Quiet, premium, and designed to elevate modern spaces."
       />
-      <section className="hero-section">
-        <div className="hero-copy">
-          <p className="label">Premium Wooden Wall Clocks</p>
-          <h1>Luxury clocks crafted like heirloom objects, not ordinary wall accessories.</h1>
-          <p className="hero-text">
-            CHRONYX presents premium wooden clocks through a cleaner storefront flow with focused
-            discovery, dedicated product pages, cart, checkout, payment, and confirmation.
-          </p>
+
+      <section className="home-v2-hero">
+        <div className="home-v2-hero-copy">
+          <h1>Time, Framed Perfectly.</h1>
+          <p>Minimal. Precise. Built to last.</p>
           <div className="hero-cta-group">
-            {products.length > 0 && (
-              <Link className="primary-btn" to={`/products/${products[0].id}`}>
-                Explore Collection <ArrowRight size={18} />
-              </Link>
-            )}
-            <Link className="secondary-btn" to="/shop">
-              Open cart
+            <Link className="btn-primary" to="/shop">
+              Explore Collection
             </Link>
-          </div>
-          <div className="hero-meta">
-            <div>
-              <span className="meta-label">Current demand</span>
-              <strong>{urgencyCount} people are viewing this drop</strong>
-            </div>
-            <div>
-              <span className="meta-label">Estimated delivery</span>
-              <strong>{deliveryDate}</strong>
-            </div>
+            {heroProduct ? (
+              <Link className="btn-secondary" to={`/products/${heroProduct.id}`}>
+                Watch Design
+              </Link>
+            ) : null}
           </div>
         </div>
-        <div className="hero-image-pane">
-          {products.length > 0 ? (
-            <img src={products[0].hero} alt={products[0].name} loading="lazy" />
-          ) : (
-            <div style={{ width: '100%', height: '100%', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: 'var(--text-secondary)' }}>No products yet.</p>
+
+        {heroImage ? (
+          <div className="home-v2-hero-visual">
+            <div className="hero-product-stage" style={{ transform: `scale(${heroScale})` }}>
+              <img src={heroImage} alt={heroProduct?.name || 'Chronyx clock'} loading="eager" />
             </div>
-          )}
+          </div>
+        ) : null}
+      </section>
+
+      {heroProduct ? (
+        <section className="home-v2-feature home-v2-feature-primary">
+          <div className="home-v2-shell home-v2-feature-grid">
+            <div className="feature-copy">
+              <p className="feature-kicker">Signature Piece</p>
+              <h2>The Chronyx Core</h2>
+              <p>
+                A statement piece engineered for modern spaces.
+              </p>
+              <Link className="text-link" to={`/products/${heroProduct.id}`}>
+                Learn More <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="feature-media">
+              <img src={signatureImage} alt={heroProduct.name} loading="lazy" />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {featureProduct ? (
+        <section className="home-v2-feature home-v2-feature-secondary">
+          <div className="home-v2-shell home-v2-feature-grid">
+            <div className="feature-media">
+              <img src={featureImage} alt={featureProduct.name} loading="lazy" />
+            </div>
+            <div className="feature-copy">
+              <p className="feature-kicker">Material First</p>
+              <h2>Natural Wood. Timeless Design.</h2>
+              <p>
+                Crafted from premium materials with precision detailing.
+              </p>
+              <Link className="text-link" to={`/products/${featureProduct.id}`}>
+                View Details <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="home-v2-values">
+        <div className="home-v2-shell home-v2-values-grid">
+          <article className="value-item">
+            <Cube size={24} weight="regular" />
+            <h3>Minimal Design</h3>
+            <p>Clean. Distraction-free.</p>
+          </article>
+          <article className="value-item">
+            <Gauge size={24} weight="regular" />
+            <h3>Premium Materials</h3>
+            <p>Engineered wood &amp; fine finish.</p>
+          </article>
+          <article className="value-item">
+            <MoonStars size={24} weight="regular" />
+            <h3>Silent Movement</h3>
+            <p>Zero noise. Pure focus.</p>
+          </article>
         </div>
       </section>
 
-      {/* Press Strip / As Seen On */}
-      <section className="press-strip" style={{ padding: '32px 0', borderBottom: '1px solid var(--line)', textAlign: 'center' }}>
-        <p className="label" style={{ marginBottom: '16px' }}>As Featured In</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '48px', opacity: 0.6, flexWrap: 'wrap' }}>
-          {['Architectural Digest', 'Wallpaper*', 'Dwell', 'Vogue Living'].map(mag => (
-            <span key={mag} style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 'bold' }}>{mag}</span>
-          ))}
-        </div>
+      <section className="home-v2-statement">
+        <p>Designed to elevate the way you experience time.</p>
       </section>
 
-      <section className="trust-strip">
-        <article>
-          <Truck size={24} weight="duotone" />
-          <div>
-            <strong>Insured delivery</strong>
-            <span>White-glove packaging and tracked dispatch.</span>
-          </div>
-        </article>
-        <article>
-          <Lock size={24} weight="duotone" />
-          <div>
-            <strong>Secure payment flow</strong>
-            <span>Shipping and payment are handled on separate steps.</span>
-          </div>
-        </article>
-        <article>
-          <CheckCircle size={24} weight="duotone" />
-          <div>
-            <strong>Small-run finishing</strong>
-            <span>Every edition is hand-finished before dispatch.</span>
-          </div>
-        </article>
-      </section>
+      {shopPreview.length > 0 ? (
+        <section className="home-v2-shop-preview">
+          <div className="home-v2-shell">
+            <div className="section-heading home-v2-heading">
+              <p className="label">Shop Preview</p>
+              <h2>Discover the current collection.</h2>
+            </div>
 
-      <section className="catalog-section">
-        <div className="section-heading split-heading">
-          <div>
-            <p className="label">Collection</p>
-            <h2>Browse products from the homepage, then open dedicated detail pages.</h2>
-          </div>
-        </div>
-        <div className="product-grid">
-          {products.map((product) => (
-            <article className="product-card" key={product.id}>
-              <div style={{ position: 'relative' }}>
-                <Link className="product-image-link hover-zoom" to={`/products/${product.id}`}>
-                  <img src={product.hero} alt={product.name} loading="lazy" />
+            <div className="home-v2-product-grid">
+              {shopPreview.map((product) => (
+                <Link key={product.id} className="home-v2-product-card" to={`/products/${product.id}`}>
+                  <div className="home-v2-product-image">
+                    <img src={product.hero} alt={product.name} loading="lazy" />
+                  </div>
+                  <div className="home-v2-product-copy">
+                    <h3>{product.name}</h3>
+                    <span>{formatCurrency(product.price)}</span>
+                  </div>
                 </Link>
-                {product.stockPercent === 0 && (
-                  <div style={{ position: 'absolute', top: 12, left: 12, background: 'var(--surface-3)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>SOLD OUT</div>
-                )}
-              </div>
-              <div className="product-card-copy">
-                <div className="product-top">
-                  <p className="label">{product.category}</p>
-                  <span>{product.size}</span>
-                </div>
-                <h3>{product.name}</h3>
-                <p>{product.summary}</p>
-                <div className="stock-row">
-                  <div className="battery-bar">
-                    <div style={{ width: `${product.stockPercent}%`, background: product.stockPercent === 0 ? 'var(--line)' : 'var(--text)' }} />
-                  </div>
-                  <small>{product.stockPercent === 0 ? 'Waitlist Open' : `${product.stockPercent}% stock remaining`}</small>
-                </div>
-                <div className="product-bottom">
-                  <div>
-                    <strong>{formatCurrency(product.price)}</strong>
-                    <small>{product.finish}</small>
-                  </div>
-                  <div className="product-actions">
-                    {product.stockPercent === 0 ? (
-                      <Link className="primary-btn" to={`/products/${product.id}`} style={{ background: 'var(--surface-3)', color: 'var(--text)', border: '1px solid var(--line)' }}>
-                        Notify Me
-                      </Link>
-                    ) : (
-                      <>
-                        <Link className="secondary-btn" to={`/products/${product.id}`}>
-                          View
-                        </Link>
-                        <button
-                          className="primary-btn"
-                          onClick={() => {
-                            addToCart(product.id);
-                            setNotice(`${product.name} added to cart.`);
-                          }}
-                        >
-                          Add
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+              ))}
+            </div>
 
-      {/* Testimonials */}
-      <section className="testimonials-section" style={{ padding: '80px 24px', background: 'var(--surface-2)', margin: '0 -24px' }}>
-        <div style={{ maxWidth: '1360px', margin: '0 auto', textAlign: 'center' }}>
-          <p className="label">Client Commissions</p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', margin: '16px 0 48px' }}>What our collectors say.</h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', textAlign: 'left' }}>
-            {[
-              { quote: "The attention to detail is staggering. It’s not just a clock, it’s a centerpiece that anchors my entire living room.", author: "James M.", location: "Mumbai" },
-              { quote: "I waited three months for my pre-order and it was worth every second. The wood grain is absolutely beautiful.", author: "Priya K.", location: "Delhi" },
-              { quote: "Flawless silent movement and the finish is exquisite. Chronyx has mastered the art of timekeeping.", author: "Arjun R.", location: "Bangalore" }
-            ].map((t, i) => (
-               <div key={i} style={{ padding: '32px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
-                 <div style={{ display: 'flex', gap: '4px', color: 'var(--accent)', marginBottom: '16px' }}>
-                    {[1,2,3,4,5].map(s => <Star key={s} weight="fill" size={16} />)}
-                 </div>
-                 <p style={{ fontSize: '1.1rem', lineHeight: '1.6', fontStyle: 'italic', marginBottom: '24px' }}>"{t.quote}"</p>
-                 <div>
-                   <strong>{t.author}</strong>
-                   <span style={{ display: 'block', color: 'var(--muted)', fontSize: '0.9rem' }}>{t.location}</span>
-                 </div>
-               </div>
+            <div className="home-v2-actions">
+              <Link className="btn-secondary" to="/shop">
+                View All Products
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="home-v2-process">
+        <div className="home-v2-shell">
+          <div className="section-heading home-v2-heading">
+            <p className="label">Built With Precision</p>
+            <h2>From first sketch to final finish.</h2>
+          </div>
+
+          <div className="process-flow">
+            {processSteps.map((step, index) => (
+              <button
+                key={step.label}
+                type="button"
+                className={`process-step ${index === activeProcessIndex ? 'active' : ''}`}
+                onClick={() => setActiveProcessIndex(index)}
+              >
+                <span>{step.label}</span>
+              </button>
             ))}
+          </div>
+
+          <div className="process-stage">
+            <div className="process-stage-copy">
+              <p className="process-stage-kicker">{activeProcessStep.label}</p>
+              <h3>{activeProcessStep.title}</h3>
+              <p>{activeProcessStep.description}</p>
+            </div>
+
+            {activeProcessStep.image ? (
+              <div className="process-image">
+                <img src={activeProcessStep.image} alt={activeProcessStep.title} loading="lazy" />
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <section className="founder-panel">
-        <p className="label">Founder Message</p>
-        <blockquote>{founderQuote}</blockquote>
-      </section>
-
-      {/* Instagram Lifestyle Gallery */}
-      <section className="social-gallery" style={{ paddingTop: '64px' }}>
-         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-           <p className="label">Follow The Atelier</p>
-           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', margin: '8px 0' }}>@chronyx.studio</h2>
-         </div>
-         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            {[
-              'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&q=80&w=600',
-              'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600',
-              'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=600',
-              'https://images.unsplash.com/photo-1595526114101-10ce6b82504b?auto=format&fit=crop&q=80&w=600'
-            ].map((src, i) => (
-              <div key={i} className="hover-zoom" style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden' }}>
-                <img src={src} alt="Lifestyle interior" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {testimonials.length > 0 ? (
+        <section className="home-v2-social-proof">
+          <div className="home-v2-shell">
+            <div className="home-v2-social-intro">
+              <div className="section-heading home-v2-heading">
+                <p className="label">Social Proof</p>
+                <h2>Loved by creators and minimalists.</h2>
               </div>
-            ))}
-         </div>
+
+              <div className="home-v2-social-copy">
+                <p>
+                  The calm silhouette, silent movement, and tactile finish are what make these pieces feel right at home in intentional spaces.
+                </p>
+                <div className="home-v2-social-stats">
+                  <div>
+                    <strong>4.9/5</strong>
+                    <span>Average satisfaction</span>
+                  </div>
+                  <div>
+                    <strong>{testimonials.length}+</strong>
+                    <span>Featured collector notes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="testimonial-row">
+              {testimonials.slice(0, 3).map((testimonial) => (
+                <article key={testimonial.author} className="testimonial-quote-card">
+                  <span className="testimonial-mark">“</span>
+                  <p>"{testimonial.quote}"</p>
+                  <div className="testimonial-meta">
+                    <strong>{testimonial.author}</strong>
+                    {testimonial.location ? <span>{testimonial.location}</span> : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="home-v2-final-cta">
+        <div className="final-cta-copy">
+          <h2>Make Time Beautiful.</h2>
+          <p>Bring Chronyx into your space.</p>
+          <Link className="btn-primary btn-primary-light" to="/shop">
+            Shop Now
+          </Link>
+        </div>
       </section>
     </div>
   );

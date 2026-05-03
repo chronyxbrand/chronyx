@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { ArrowRight } from '@phosphor-icons/react';
 import { Navigate } from 'react-router-dom';
 
+const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://chronyx.in';
+
 function AuthPage({ user }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -25,7 +27,13 @@ function AuthPage({ user }) {
         if (error) throw error;
         // Successful login will trigger the auth state listener in App.jsx
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${SITE_URL}/auth`,
+          },
+        });
         if (error) throw error;
         
         // Auto-subscribe new users to newsletter

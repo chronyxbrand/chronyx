@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Lenis from 'lenis';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WhatsappLogo } from '@phosphor-icons/react';
@@ -10,6 +10,8 @@ import SiteFooter from './components/SiteFooter';
 import ConsentPrompt from './components/ConsentPrompt';
 import ExitIntentPopup from './components/ExitIntentPopup';
 import BackToTop from './components/BackToTop';
+import Analytics from './components/Analytics';
+import { buildSiteContent, defaultSiteContent } from './lib/siteContent';
 
 import {
   CART_KEY,
@@ -28,6 +30,8 @@ import ShopPage from './pages/ShopPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import BlogPage from './pages/BlogPage';
+import JournalArticlePage from './pages/JournalArticlePage';
+import VerifyProductPage from './pages/VerifyProductPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AccountPage from './pages/AccountPage';
 import TrackingPage from './pages/TrackingPage';
@@ -45,9 +49,24 @@ function App() {
 }
 
 const WISHLIST_KEY = 'chronyx-wishlist';
+const DEFAULT_STORE_SETTINGS = {
+  maintenance_mode: false,
+  cod_enabled: true,
+  cod_fee: 100,
+  free_shipping_threshold: 50000,
+  store_name: 'CHRONYX',
+  contact_email: 'hello@chronyx.in',
+  whatsapp_number: '',
+  express_shipping_enabled: false,
+  express_shipping_fee: 1500,
+  upi_enabled: true,
+  card_enabled: true,
+  netbanking_enabled: true,
+  show_journal: false,
+};
 
 function StoreApp() {
-  const [theme, setTheme] = useState('night');
+  const [theme, setTheme] = useState('maple');
   const [splashDone, setSplashDone] = useState(false);
   const [cart, setCart] = useState(loadCart);
   const [shipping, setShipping] = useState(initialShipping);
@@ -63,7 +82,10 @@ function StoreApp() {
   });
 
   const [products, setProducts] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [siteContent, setSiteContent] = useState(defaultSiteContent);
+  const [storeSettings, setStoreSettings] = useState(DEFAULT_STORE_SETTINGS);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -91,6 +113,10 @@ function StoreApp() {
       const mappedProducts = data.map(p => {
         const heroImg = p.product_images?.find(img => img.is_hero)?.image_url || p.product_images?.[0]?.image_url || '';
         const gallery = p.product_images?.map(img => img.image_url) || [];
+        const stockQuantity = Number(
+          p.stock_quantity ?? p.stock ?? 0,
+        );
+        const stockLevelPercent = Math.max(0, Math.min(100, stockQuantity * 10));
 
         return {
           id: p.id,
@@ -98,7 +124,8 @@ function StoreApp() {
           tagline: p.tagline || p.description,
           category: p.category,
           price: Number(p.price),
-          stockPercent: p.stock_quantity,
+          stockQuantity,
+          stockLevelPercent,
           size: p.size,
           finish: p.finish,
           material: p.material,
@@ -124,6 +151,43 @@ function StoreApp() {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('collections')
+          .select('*, collection_products(product_id, sort_order)')
+          .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        setCollections(data || []);
+      } catch (error) {
+        console.error('Failed to fetch collections', error);
+        setCollections([]);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+  useEffect(() => {
+    const fetchSiteContent = async () => {
+      try {
+        const { data, error } = await supabase.from('settings').select('key, value');
+        if (error) throw error;
+        setSiteContent(buildSiteContent(data || []));
+        const settingsRow = (data || []).find((item) => item.key === 'store_settings');
+        setStoreSettings((current) => ({ ...current, ...(settingsRow?.value || {}) }));
+      } catch (error) {
+        console.error('Failed to fetch site content', error);
+        setSiteContent(defaultSiteContent);
+        setStoreSettings(DEFAULT_STORE_SETTINGS);
+      }
+    };
+
+    fetchSiteContent();
   }, []);
 
   const location = useLocation();
@@ -163,7 +227,6 @@ function StoreApp() {
     } catch {}
   }, [wishlist]);
 
-  // Lenis Smooth Scroll
   useEffect(() => {
     const lenis = new Lenis({ duration: 1.05, smoothWheel: true, smoothTouch: false });
     let frame = 0;
@@ -180,16 +243,13 @@ function StoreApp() {
     };
   }, []);
 
-  // Page Transition & Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
     
-    // Simple page transition fade
     if (mainRef.current) {
       gsap.fromTo(mainRef.current, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' });
     }
 
-    // Scroll Animations (GSAP)
     const timer = setTimeout(() => {
       const sections = document.querySelectorAll('section');
       sections.forEach(section => {
@@ -212,6 +272,31 @@ function StoreApp() {
 
     return () => clearTimeout(timer);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setNotice('');
+    }, 3200);
+
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    setNotice('');
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleGlobalNotice = (event) => {
+      if (event?.detail) {
+        setNotice(String(event.detail));
+      }
+    };
+
+    window.addEventListener('chronyx-notice', handleGlobalNotice);
+    return () => window.removeEventListener('chronyx-notice', handleGlobalNotice);
+  }, []);
 
   const addToCart = (productId) => {
     const product = products.find((item) => item.id === productId);
@@ -254,8 +339,14 @@ function StoreApp() {
     }).format(date);
   }, []);
 
+  const publicStoreName = String(storeSettings.store_name || DEFAULT_STORE_SETTINGS.store_name).trim() || 'CHRONYX';
+  const whatsappNumber = String(storeSettings.whatsapp_number || '')
+    .replace(/\D/g, '')
+    .replace(/^0+/, '');
+
   return (
     <div className="chronyx-app">
+      <Analytics />
       <div className={splashDone ? 'splash-screen is-hidden' : 'splash-screen'}>
         <span>CHRONYX</span>
       </div>
@@ -268,18 +359,44 @@ function StoreApp() {
         setNotice={setNotice}
         wishlistCount={wishlist.length}
         user={user}
+        showJournal={Boolean(storeSettings.show_journal)}
+        storeName={publicStoreName}
+        navContent={siteContent.navContent}
       />
 
       <main className="app-main" ref={mainRef}>
-        {loadingProducts ? (
+        {storeSettings.maintenance_mode ? (
+          <section className="page-stack">
+            <section className="page-header-panel">
+              <p className="label">Store Maintenance</p>
+              <h1>{publicStoreName} is temporarily unavailable.</h1>
+              <p className="hero-text">
+                We are making a few updates behind the scenes. Please check back shortly.
+              </p>
+            </section>
+          </section>
+        ) : loadingProducts ? (
           <div style={{ padding: '100px', textAlign: 'center' }}>Loading store...</div>
         ) : (
         <Routes>
           <Route
             path="/"
-            element={<HomePage addToCart={addToCart} deliveryDate={deliveryDate} setNotice={setNotice} products={products} />}
+            element={
+              <HomePage
+                addToCart={addToCart}
+                deliveryDate={deliveryDate}
+                setNotice={setNotice}
+                products={products}
+                collections={collections}
+                siteContent={siteContent}
+              />
+            }
           />
-          <Route path="/products/:productId" element={<ProductPage addToCart={addToCart} products={products} />} />
+          <Route
+            path="/products/:productId"
+            element={<ProductPage addToCart={addToCart} products={products} />}
+          />
+          <Route path="/verify/unit/:unitId" element={<VerifyProductPage products={products} />} />
           <Route
             path="/cart"
             element={
@@ -290,6 +407,7 @@ function StoreApp() {
                 clearCart={clearCart}
                 products={products}
                 user={user}
+                storeSettings={storeSettings}
               />
             }
           />
@@ -321,28 +439,46 @@ function StoreApp() {
             }
           />
           <Route path="/confirmation" element={<ConfirmationPage />} />
-          <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} collections={collections} />} />
+          <Route path="/about" element={<AboutPage siteContent={siteContent} />} />
+          <Route path="/contact" element={<ContactPage siteContent={siteContent} storeSettings={storeSettings} />} />
+          <Route
+            path="/blog"
+            element={storeSettings.show_journal ? <BlogPage /> : <Navigate to="/" replace />}
+          />
+          <Route
+            path="/journal/:slug"
+            element={storeSettings.show_journal ? <JournalArticlePage /> : <Navigate to="/" replace />}
+          />
           <Route path="/account" element={<AccountPage user={user} />} />
           <Route path="/auth" element={<AuthPage user={user} />} />
           <Route path="/track" element={<TrackingPage />} />
-          <Route path="/policies" element={<PoliciesPage />} />
+          <Route path="/policies" element={<PoliciesPage siteContent={siteContent} />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         )}
       </main>
 
-      <SiteFooter />
+      <SiteFooter
+        footerContent={siteContent.footerContent}
+        showJournal={Boolean(storeSettings.show_journal)}
+        storeName={publicStoreName}
+      />
       <ConsentPrompt />
       <ExitIntentPopup user={user} />
       <BackToTop />
       
-      {/* WhatsApp Floating Widget */}
-      <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" className="whatsapp-widget" aria-label="Chat on WhatsApp">
-        <WhatsappLogo size={32} weight="fill" />
-      </a>
+      {whatsappNumber ? (
+        <a
+          href={`https://wa.me/${whatsappNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="whatsapp-widget"
+          aria-label={`Chat with ${publicStoreName} on WhatsApp`}
+        >
+          <WhatsappLogo size={32} weight="fill" />
+        </a>
+      ) : null}
     </div>
   );
 }

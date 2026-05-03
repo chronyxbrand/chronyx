@@ -1,24 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FloppyDisk } from '@phosphor-icons/react';
+import { supabase } from '../lib/supabase';
+
+const defaultSettings = {
+  maintenance_mode: false,
+  cod_enabled: true,
+  cod_fee: 100,
+  free_shipping_threshold: 50000,
+  store_name: 'CHRONYX',
+  contact_email: 'hello@chronyx.in',
+  whatsapp_number: '',
+  express_shipping_enabled: false,
+  express_shipping_fee: 1500,
+  upi_enabled: true,
+  card_enabled: true,
+  netbanking_enabled: true,
+  show_journal: false,
+};
+
+const paymentFields = [
+  {
+    name: 'upi_enabled',
+    title: 'UPI',
+    body: 'Fast mobile-first checkout for most customers.',
+  },
+  {
+    name: 'card_enabled',
+    title: 'Cards',
+    body: 'Keeps debit and credit card payment visible.',
+  },
+  {
+    name: 'netbanking_enabled',
+    title: 'Net banking',
+    body: 'Supports customers who prefer direct bank payment.',
+  },
+];
+
+function SettingsPanel({ eyebrow, title, body, children }) {
+  return (
+    <section className="settings-panel">
+      <div className="settings-panel-header">
+        <p className="settings-panel-eyebrow">{eyebrow}</p>
+        <h3>{title}</h3>
+        <p>{body}</p>
+      </div>
+      <div className="settings-panel-body">{children}</div>
+    </section>
+  );
+}
+
+function SettingsLabel({ children }) {
+  return <label className="settings-label">{children}</label>;
+}
+
+function SettingsHint({ children }) {
+  return <p className="settings-hint">{children}</p>;
+}
+
+function ToggleRow({ name, checked, onChange, title, body, danger = false }) {
+  return (
+    <label className={`settings-toggle-row ${danger ? 'is-danger' : ''}`}>
+      <div className="settings-toggle-copy">
+        <strong>{title}</strong>
+        {body ? <small>{body}</small> : null}
+      </div>
+      <div className="settings-toggle-control">
+        <span className={`settings-toggle-state ${checked ? 'is-on' : 'is-off'}`}>{checked ? 'On' : 'Off'}</span>
+        <input className="admin-toggle-input" type="checkbox" name={name} checked={checked} onChange={onChange} />
+      </div>
+    </label>
+  );
+}
+
+function SummaryChip({ label, value }) {
+  return (
+    <div className="settings-summary-chip">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
 
 const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState({
-    maintenance_mode: false,
-    cod_enabled: true,
-    cod_fee: 100,
-    free_shipping_threshold: 50000,
-    store_name: 'CHRONYX',
-    contact_email: 'hello@chronyx.in',
-    whatsapp_number: '',
-    express_shipping_enabled: false,
-    express_shipping_fee: 1500,
-    upi_enabled: true,
-    card_enabled: true,
-    netbanking_enabled: true
-  });
+  const [settings, setSettings] = useState(defaultSettings);
 
   useEffect(() => {
     fetchSettings();
@@ -28,11 +94,10 @@ const Settings = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.from('settings').select('*').eq('key', 'store_settings').single();
-      
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is not found
-      
-      if (data && data.value) {
-        setSettings(prev => ({ ...prev, ...data.value }));
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data?.value) {
+        setSettings((prev) => ({ ...prev, ...data.value }));
       }
     } catch (error) {
       console.error('Error fetching settings:', error.message);
@@ -41,131 +106,194 @@ const Settings = () => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setSettings((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({ key: 'store_settings', value: settings });
-      
+      const { error } = await supabase.from('settings').upsert({ key: 'store_settings', value: settings });
       if (error) throw error;
       alert('Global settings saved successfully!');
     } catch (error) {
-      alert('Error saving settings: ' + error.message);
+      alert(`Error saving settings: ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
+  const enabledPayments = useMemo(
+    () =>
+      [settings.upi_enabled, settings.card_enabled, settings.netbanking_enabled, settings.cod_enabled].filter(Boolean)
+        .length,
+    [settings],
+  );
+
   if (loading) return <div>Loading settings...</div>;
 
   return (
-    <div>
-      <div className="page-header">
-        <h2>Global Settings</h2>
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FloppyDisk size={16} /> Save Settings
+    <div className="settings-page settings-redesign">
+      <div className="page-header settings-header">
+        <div>
+          <p className="settings-page-eyebrow">Store Controls</p>
+          <h2>Settings</h2>
+          <p className="cms-page-subtitle">
+            Manage the storefront rules, contact details, payment visibility, and delivery controls from one place.
+          </p>
+        </div>
+        <button className="btn-primary settings-save-btn" onClick={handleSave} disabled={saving}>
+          <FloppyDisk size={16} />
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-        
-        {/* General Preferences */}
-        <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>Store Preferences</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Store Name</label>
-              <input type="text" name="store_name" value={settings.store_name} onChange={handleChange} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Free Shipping Threshold (₹)</label>
-              <input type="number" name="free_shipping_threshold" value={settings.free_shipping_threshold} onChange={handleChange} />
-            </div>
-            
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="maintenance_mode" checked={settings.maintenance_mode} onChange={handleChange} style={{ width: 'auto' }} />
-                <span style={{ color: settings.maintenance_mode ? 'var(--danger)' : 'inherit' }}>
-                  Enable Maintenance Mode (Takes site offline)
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
+      <div className="settings-summary-row">
+        <SummaryChip label="Store" value={settings.maintenance_mode ? 'Paused' : 'Live'} />
+        <SummaryChip label="Payments" value={`${enabledPayments} enabled`} />
+        <SummaryChip
+          label="Free Shipping"
+          value={`INR ${Number(settings.free_shipping_threshold || 0).toLocaleString('en-IN')}`}
+        />
+        <SummaryChip
+          label="Journal"
+          value={settings.show_journal ? 'Visible' : 'Hidden'}
+        />
+      </div>
 
-        {/* Shipping Configurations */}
-        <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>Shipping Options</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="express_shipping_enabled" checked={settings.express_shipping_enabled} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>Enable Express Shipping</span>
-              </label>
-            </div>
-            
-            {settings.express_shipping_enabled && (
-              <div style={{ marginLeft: '28px', padding: '12px', background: 'var(--surface-2)', borderRadius: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Express Shipping Fee (₹)</label>
-                <input type="number" name="express_shipping_fee" value={settings.express_shipping_fee} onChange={handleChange} />
+      <div className="settings-layout">
+        <div className="settings-column">
+          <SettingsPanel
+            eyebrow="Brand"
+            title="Store identity"
+            body="Business details used across support, branding, and customer communication."
+          >
+            <div className="settings-form-grid">
+              <div>
+                <SettingsLabel>Store Name</SettingsLabel>
+                <input type="text" name="store_name" value={settings.store_name} onChange={handleChange} />
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Payment Methods */}
-        <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>Payment Methods</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="upi_enabled" checked={settings.upi_enabled} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>UPI (Razorpay)</span>
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="card_enabled" checked={settings.card_enabled} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>Credit/Debit Cards (Razorpay)</span>
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="netbanking_enabled" checked={settings.netbanking_enabled} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>Netbanking (Razorpay)</span>
-              </label>
-            </div>
-
-            <hr style={{ borderColor: 'var(--border)' }} />
-
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" name="cod_enabled" checked={settings.cod_enabled} onChange={handleChange} style={{ width: 'auto' }} />
-                <span>Cash on Delivery (COD)</span>
-              </label>
-            </div>
-
-            {settings.cod_enabled && (
-              <div style={{ marginLeft: '28px', padding: '12px', background: 'var(--surface-2)', borderRadius: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>COD Handling Fee (₹)</label>
-                <input type="number" name="cod_fee" value={settings.cod_fee} onChange={handleChange} />
+              <div className="settings-two-col">
+                <div>
+                  <SettingsLabel>Support Email</SettingsLabel>
+                  <input type="email" name="contact_email" value={settings.contact_email} onChange={handleChange} />
+                </div>
+                <div>
+                  <SettingsLabel>WhatsApp Number</SettingsLabel>
+                  <input
+                    type="text"
+                    name="whatsapp_number"
+                    value={settings.whatsapp_number}
+                    onChange={handleChange}
+                    placeholder="e.g. 919876543210"
+                  />
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          </SettingsPanel>
+
+          <SettingsPanel
+            eyebrow="Shipping"
+            title="Delivery pricing"
+            body="Control thresholds and optional delivery fees shown during checkout."
+          >
+            <div className="settings-form-grid">
+              <div>
+                <SettingsLabel>Free Shipping Threshold (INR)</SettingsLabel>
+                <input
+                  type="number"
+                  name="free_shipping_threshold"
+                  value={settings.free_shipping_threshold}
+                  onChange={handleChange}
+                />
+                <SettingsHint>Orders above this amount qualify for free standard shipping.</SettingsHint>
+              </div>
+
+              {settings.express_shipping_enabled ? (
+                <div className="settings-inline-panel">
+                  <SettingsLabel>Express Shipping Fee (INR)</SettingsLabel>
+                  <input
+                    type="number"
+                    name="express_shipping_fee"
+                    value={settings.express_shipping_fee}
+                    onChange={handleChange}
+                  />
+                </div>
+              ) : null}
+
+              {settings.cod_enabled ? (
+                <div className="settings-inline-panel">
+                  <SettingsLabel>COD Handling Fee (INR)</SettingsLabel>
+                  <input type="number" name="cod_fee" value={settings.cod_fee} onChange={handleChange} />
+                </div>
+              ) : null}
+            </div>
+          </SettingsPanel>
         </div>
 
+        <div className="settings-column">
+          <SettingsPanel
+            eyebrow="Storefront"
+            title="Operational switches"
+            body="Toggle customer-facing delivery and storefront availability states."
+          >
+            <div className="settings-toggle-stack">
+              <ToggleRow
+                name="express_shipping_enabled"
+                checked={settings.express_shipping_enabled}
+                onChange={handleChange}
+                title="Express shipping"
+                body="Shows a faster premium delivery option during checkout."
+              />
+              <ToggleRow
+                name="cod_enabled"
+                checked={settings.cod_enabled}
+                onChange={handleChange}
+                title="Cash on Delivery"
+                body="Keeps COD visible as an available checkout method."
+              />
+              <ToggleRow
+                name="maintenance_mode"
+                checked={settings.maintenance_mode}
+                onChange={handleChange}
+                title="Maintenance mode"
+                body="Use only when you intentionally want to pause storefront access."
+                danger
+              />
+              <ToggleRow
+                name="show_journal"
+                checked={settings.show_journal}
+                onChange={handleChange}
+                title="Show Journal on storefront"
+                body="Controls whether customers can see the Journal tab, footer link, and article pages."
+              />
+            </div>
+          </SettingsPanel>
+
+          <SettingsPanel
+            eyebrow="Payments"
+            title="Accepted payment methods"
+            body="These toggles control which payment choices customers see during checkout."
+          >
+            <div className="settings-toggle-stack">
+              {paymentFields.map((item) => (
+                <ToggleRow
+                  key={item.name}
+                  name={item.name}
+                  checked={settings[item.name]}
+                  onChange={handleChange}
+                  title={item.title}
+                  body={item.body}
+                />
+              ))}
+            </div>
+          </SettingsPanel>
+        </div>
       </div>
     </div>
   );

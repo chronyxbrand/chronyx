@@ -16,8 +16,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  resend_api_key text := 're_RttmJbCQ_EvmeEH8CfmEjpuuuCj1RKPu4'; -- PASTE YOUR NEW KEY HERE
-  admin_email text := 'chronyxbrand@gmail.com'; -- MUST match your Resend account email
+  resend_api_key text := 'REPLACE_WITH_RESEND_API_KEY'; -- Set a real key before using this SQL path
+  admin_email text := 'hello@chronyx.in'; -- Update this to your real support inbox
   customer_payload jsonb;
   admin_payload jsonb;
   customer_email_html text;

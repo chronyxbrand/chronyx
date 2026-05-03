@@ -1,16 +1,33 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import SEO from '../components/SEO';
 
-function ContactPage() {
+function ContactPage({ siteContent, storeSettings }) {
   const [submitted, setSubmitted] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const contactPageContent = siteContent?.contactPageContent;
+  const addressLines = (contactPageContent.studioAddress || '').split('\n').filter(Boolean);
+  const resolvedSupportEmail =
+    storeSettings?.contact_email || contactPageContent.supportEmail || 'hello@chronyx.in';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await supabase.from('contact_messages').insert([{ name, email, message }]);
+      try {
+        await supabase.functions.invoke('send-contact-email', {
+          body: {
+            name,
+            email,
+            message,
+            supportEmail: resolvedSupportEmail,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send contact email:', emailError);
+      }
     } catch (err) {
       console.error('Failed to save message:', err);
     }
@@ -19,25 +36,27 @@ function ContactPage() {
 
   return (
     <div className="page-stack">
+      <SEO
+        title="Contact"
+        description="Contact CHRONYX for product questions, order help, or custom wooden clock requests."
+        path="/contact"
+      />
       <section className="page-header-panel">
-        <p className="label">Contact</p>
-        <h1>Get in Touch</h1>
+        <p className="label">{contactPageContent.eyebrow}</p>
+        <h1>{contactPageContent.title}</h1>
       </section>
 
       <section className="checkout-layout">
         <div className="checkout-form-panel">
           <div className="section-heading">
-            <h2>Send us a message</h2>
-            <p className="hero-text">
-              Have questions about a product, order, or custom request? Fill out the form below
-              and our team will get back to you within 24 hours.
-            </p>
+            <h2>{contactPageContent.introHeadline}</h2>
+            <p className="hero-text">{contactPageContent.introBody}</p>
           </div>
 
           {submitted ? (
             <div className="confirmation-panel" style={{ textAlign: 'left', padding: '24px' }}>
-              <h3>Message Sent</h3>
-              <p>Thank you for reaching out. We will be in touch shortly.</p>
+              <h3>{contactPageContent.successTitle}</h3>
+              <p>{contactPageContent.successBody}</p>
             </div>
           ) : (
             <form className="form-grid" onSubmit={handleSubmit}>
@@ -61,20 +80,21 @@ function ContactPage() {
         </div>
 
         <div className="summary-panel">
-          <h3>Customer Support</h3>
-          <p>
-            Our studio hours are Monday to Friday, 9am to 6pm IST.
-          </p>
+          <h3>{contactPageContent.supportHeading}</h3>
+          <p>{contactPageContent.supportBody}</p>
           <div style={{ marginTop: '24px' }}>
             <p className="label">Email</p>
-            <strong>support@chronyx.in</strong>
+            <strong>{resolvedSupportEmail}</strong>
           </div>
           <div style={{ marginTop: '16px' }}>
             <p className="label">Studio</p>
             <strong>
-              124 Craft Avenue<br />
-              Bangalore, 560001<br />
-              India
+              {addressLines.map((line, index) => (
+                <React.Fragment key={`${line}-${index}`}>
+                  {line}
+                  {index < addressLines.length - 1 ? <br /> : null}
+                </React.Fragment>
+              ))}
             </strong>
           </div>
         </div>

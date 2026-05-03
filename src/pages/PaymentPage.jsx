@@ -56,14 +56,12 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
         return;
       }
 
-      // Check if expired
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         setNotice('This coupon has expired');
         setDiscount(0);
         return;
       }
 
-      // Check max uses
       if (data.max_uses && data.times_used >= data.max_uses) {
         setNotice('This coupon has reached its usage limit');
         setDiscount(0);
@@ -79,7 +77,6 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
     }
   };
 
-  // Helper to load Razorpay SDK dynamically
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement('script');
@@ -94,9 +91,44 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
     });
   };
 
+  const assignAuthenticityUnits = async (orderId) => {
+    try {
+      for (const item of cartItems) {
+        const { data: availableUnits, error: fetchError } = await supabase
+          .from('product_auth_units')
+          .select('id')
+          .eq('product_id', item.id)
+          .eq('status', 'available')
+          .order('serial_number', { ascending: true })
+          .limit(item.quantity);
+
+        if (fetchError) throw fetchError;
+
+        if (!availableUnits?.length) {
+          continue;
+        }
+
+        const selectedUnitIds = availableUnits.map((unit) => unit.id);
+
+        const { error: assignError } = await supabase
+          .from('product_auth_units')
+          .update({
+            status: 'assigned',
+            order_id: orderId,
+            assigned_to_email: shipping.email || 'guest@chronyx.in',
+            assigned_at: new Date().toISOString(),
+          })
+          .in('id', selectedUnitIds);
+
+        if (assignError) throw assignError;
+      }
+    } catch (error) {
+      console.error('Failed to assign authenticity units:', error.message);
+    }
+  };
+
   const processOrder = async (paymentDetails = null) => {
     try {
-      // 1. Save order to Supabase
       const orderData = {
         customer_email: shipping.email || 'guest@chronyx.in',
         customer_name: shipping.name || 'Guest',
@@ -117,14 +149,12 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
           phone: shipping.phone || '',
         },
         payment_method: payment.method,
-        // If paid via Razorpay, save the payment ID
         ...(paymentDetails && { razorpay_payment_id: paymentDetails.razorpay_payment_id })
       };
 
       const { data: insertedOrder, error } = await supabase.from('orders').insert([orderData]).select().single();
       if (error) throw new Error(error.message || 'Order save error');
 
-      // 2. Decrement Stock for each item
       for (const item of cartItems) {
         const { error: stockErr } = await supabase.rpc('decrement_stock', { 
           product_id: item.id, 
@@ -133,15 +163,12 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
         if (stockErr) console.error('Failed to decrement stock:', stockErr);
       }
 
-      // 3. Increment coupon usage if one was applied
       if (discount > 0 && coupon.trim()) {
         const { error: couponErr } = await supabase.rpc('increment_coupon_usage', { coupon_code: coupon.toUpperCase() });
         if (couponErr) console.error('Failed to increment coupon:', couponErr);
       }
 
-      // 4. Send Confirmation Email
-      // This is now handled automatically by the Supabase Database Webhook (Resend integration)
-      console.log('Order saved. Supabase webhook will trigger Resend email to:', orderData.customer_email);
+      await assignAuthenticityUnits(insertedOrder.id);
 
       if (refreshProducts) {
         refreshProducts();
@@ -151,6 +178,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
       navigate('/confirmation', { state: { order: insertedOrder } });
     } catch (err) {
       console.error('Failed to process order:', err);
+      setNotice('Failed to place order. Please try again.');
     }
   };
 
@@ -158,10 +186,8 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
     e.preventDefault();
     
     if (payment.method === 'COD') {
-      // Direct processing for COD
       await processOrder();
     } else {
-      // Trigger Razorpay for online payments
       const res = await loadRazorpay();
       
       if (!res) {
@@ -172,7 +198,6 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
       setNotice('Initializing secure payment...');
 
       try {
-        // 1. Ask our secure Supabase Edge Function to create an official Razorpay Order
         const { data: orderData, error } = await supabase.functions.invoke('create-razorpay-order', {
           body: { amount: Math.round(finalTotal * 100) }
         });
@@ -181,21 +206,18 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
           throw new Error('Could not create secure order. Check Razorpay keys in Supabase.');
         }
 
-        // 2. Open the official Razorpay Checkout popup using the secure order_id
         const rzpMethod = payment.method === 'Card' ? 'card' : 
                           payment.method === 'UPI' ? 'upi' : 
                           payment.method === 'NetBanking' ? 'netbanking' : '';
 
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Use your LIVE key from .env here
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
           amount: orderData.amount, 
           currency: orderData.currency,
           name: 'Chronyx',
           description: 'Luxury Timepieces',
-          // image: '/favicon.svg', // Removed temporarily: causes Mixed Content CORS error on localhost
-          order_id: orderData.id, // THE CRITICAL PIECE FOR LIVE MODE
+          order_id: orderData.id,
           handler: function (response) {
-            // Payment Successful! Pass details to processOrder to save in database
             processOrder(response);
           },
           prefill: {
@@ -205,7 +227,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
             method: rzpMethod
           },
           theme: {
-            color: '#B38B59' // Brand accent color
+            color: '#B38B59'
           }
         };
 
@@ -253,7 +275,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
                 className={payment.method === 'UPI' ? 'payment-pill active' : 'payment-pill'}
                 onClick={() => setPayment({ ...payment, method: 'UPI' })}
               >
-                UPI
+                <Wallet size={16} style={{ marginRight: '6px' }} /> UPI
               </button>
             )}
             {(!storeSettings || storeSettings.card_enabled) && (

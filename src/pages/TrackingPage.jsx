@@ -1,77 +1,123 @@
-import React, { useState } from 'react';
-import { Package, Truck, CheckCircle } from '@phosphor-icons/react';
+import React, { useMemo, useState } from 'react';
+import { CheckCircle, Package, Truck } from '@phosphor-icons/react';
+import { useLocation } from 'react-router-dom';
+import SEO from '../components/SEO';
+
+const buildTimeline = (orderId) => {
+  const now = new Date();
+  const confirmedAt = new Date(now.getTime() - 36 * 60 * 60 * 1000);
+  const dispatchAt = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+
+  return [
+    {
+      key: 'confirmed',
+      title: 'Order Confirmed',
+      subtitle: confirmedAt.toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      state: 'done',
+      icon: CheckCircle,
+    },
+    {
+      key: 'dispatch',
+      title: 'Packed for Dispatch',
+      subtitle: dispatchAt.toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      state: 'active',
+      icon: Truck,
+    },
+    {
+      key: 'delivery',
+      title: 'Delivered',
+      subtitle: `Pending final delivery scan for ${orderId.slice(0, 8).toUpperCase()}`,
+      state: 'pending',
+      icon: Package,
+    },
+  ];
+};
 
 function TrackingPage() {
-  const [orderId, setOrderId] = useState('');
-  const [tracking, setTracking] = useState(false);
+  const location = useLocation();
+  const seededOrderId = location.state?.orderId || '';
+  const [orderId, setOrderId] = useState(seededOrderId);
+  const [tracking, setTracking] = useState(Boolean(seededOrderId));
 
-  const handleTrack = (e) => {
-    e.preventDefault();
-    setTracking(true);
+  const normalizedId = orderId.trim();
+  const timeline = useMemo(
+    () => (tracking && normalizedId ? buildTimeline(normalizedId) : []),
+    [normalizedId, tracking],
+  );
+
+  const handleTrack = (event) => {
+    event.preventDefault();
+    setTracking(Boolean(orderId.trim()));
   };
 
   return (
     <div className="page-stack">
+      <SEO
+        title="Track Order"
+        description="Track your CHRONYX order status, dispatch progress, and delivery timeline."
+        path="/track"
+      />
       <section className="page-header-panel">
         <p className="label">Order Status</p>
-        <h1>Track Your Delivery</h1>
+        <h1>Track your delivery</h1>
       </section>
 
       <section className="checkout-layout">
         <form className="checkout-form-panel" onSubmit={handleTrack}>
           <div className="section-heading">
-            <h2>Enter your details</h2>
-            <p className="hero-text">Find your order number in your confirmation email.</p>
+            <h2>Enter your order ID</h2>
+            <p className="hero-text">Use the order number from your confirmation email or invoice.</p>
           </div>
           <div className="form-grid">
             <label className="full-span">
               Order ID
-              <input type="text" required placeholder="e.g. CX-12345" value={orderId} onChange={(e) => setOrderId(e.target.value)} />
+              <input
+                type="text"
+                required
+                placeholder="e.g. KRX-2026-1A2B3C4D"
+                value={orderId}
+                onChange={(event) => setOrderId(event.target.value)}
+              />
             </label>
-            <button type="submit" className="primary-btn full-span">Track Order</button>
+            <button type="submit" className="primary-btn full-span">
+              Track Order
+            </button>
           </div>
         </form>
 
-        {tracking && (
+        {tracking && normalizedId ? (
           <aside className="summary-panel">
-            <p className="label">Status for {orderId.toUpperCase()}</p>
-            <h3 style={{ marginTop: '8px' }}>In Transit</h3>
-            
-            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
-              <div style={{ position: 'absolute', left: '11px', top: '24px', bottom: '24px', width: '2px', background: 'var(--line)', zIndex: 0 }} />
-              
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', zIndex: 1 }}>
-                <div style={{ background: 'var(--accent)', color: '#000', borderRadius: '50%', padding: '4px' }}>
-                  <CheckCircle size={16} weight="fill" />
-                </div>
-                <div>
-                  <strong>Order Confirmed</strong>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>April 24, 10:00 AM</p>
-                </div>
-              </div>
+            <p className="label">Status for {normalizedId.toUpperCase()}</p>
+            <h3>In Transit</h3>
 
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', zIndex: 1 }}>
-                <div style={{ background: 'var(--surface-3)', border: '1px solid var(--accent)', color: 'var(--accent)', borderRadius: '50%', padding: '4px' }}>
-                  <Truck size={16} />
-                </div>
-                <div>
-                  <strong style={{ color: 'var(--accent)' }}>Out for Delivery</strong>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>April 26, 08:30 AM</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', zIndex: 1 }}>
-                <div style={{ background: 'var(--surface-3)', border: '1px solid var(--line)', color: 'var(--muted)', borderRadius: '50%', padding: '4px' }}>
-                  <Package size={16} />
-                </div>
-                <div style={{ opacity: 0.5 }}>
-                  <strong>Delivered</strong>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>Pending</p>
-                </div>
-              </div>
+            <div className="tracking-timeline">
+              {timeline.map((step) => {
+                const Icon = step.icon;
+                return (
+                  <div key={step.key} className={`tracking-step ${step.state}`}>
+                    <div className="tracking-step-icon">
+                      <Icon size={16} weight={step.state === 'done' ? 'fill' : 'regular'} />
+                    </div>
+                    <div className="tracking-step-copy">
+                      <strong>{step.title}</strong>
+                      <p>{step.subtitle}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </aside>
-        )}
+        ) : null}
       </section>
     </div>
   );
