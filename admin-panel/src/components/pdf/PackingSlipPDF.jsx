@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 export const packingSlipStyles = StyleSheet.create({
   page: {
@@ -268,11 +268,10 @@ export function PackingSlipPage({ order }) {
           </View>
         </View>
         <View style={{ alignItems: 'center' }}>
-          <View style={{ width: 40, height: 40, flexWrap: 'wrap', flexDirection: 'row', gap: 2, marginBottom: 4 }}>
-            {[...Array(4)].map((_, i) => (
-              <View key={i} style={{ width: 18, height: 18, backgroundColor: '#000' }} />
-            ))}
-          </View>
+          <Image 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${displayId}`} 
+            style={{ width: 40, height: 40, marginBottom: 4 }} 
+          />
           <Text style={{ fontSize: 7, color: '#666666', letterSpacing: 1 }}>SCAN TO VERIFY</Text>
         </View>
       </View>
