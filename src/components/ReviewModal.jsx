@@ -3,8 +3,15 @@ import { X, Star } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';
 
 function ReviewModal({ order, user, onClose, onReviewSubmitted }) {
+  let parsedItems = [];
+  try {
+    parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+  } catch (e) {
+    console.error('Failed to parse order items', e);
+  }
+
   const [selectedProduct, setSelectedProduct] = useState(
-    order.items && order.items.length === 1 ? order.items[0] : null
+    parsedItems.length === 1 ? parsedItems[0] : null
   );
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -12,7 +19,7 @@ function ReviewModal({ order, user, onClose, onReviewSubmitted }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const itemsToReview = order.items || [];
+  const itemsToReview = parsedItems;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
