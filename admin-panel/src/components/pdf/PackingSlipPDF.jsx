@@ -87,10 +87,9 @@ export const packingSlipStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
-  colItem: { width: '50%', padding: 8, borderRightWidth: 1, borderRightColor: '#D4D4D4' },
-  colQty: { width: '15%', padding: 8, borderRightWidth: 1, borderRightColor: '#D4D4D4', textAlign: 'center' },
-  colWeight: { width: '20%', padding: 8, borderRightWidth: 1, borderRightColor: '#D4D4D4', textAlign: 'center' },
-  colCheck: { width: '15%', padding: 8, textAlign: 'center', alignItems: 'center', justifyContent: 'center' },
+  colItem: { width: '60%', padding: 8, borderRightWidth: 1, borderRightColor: '#D4D4D4' },
+  colSku: { width: '25%', padding: 8, borderRightWidth: 1, borderRightColor: '#D4D4D4', textAlign: 'center' },
+  colQty: { width: '15%', padding: 8, textAlign: 'center' },
   itemName: {
     fontFamily: 'Helvetica-Bold',
     marginBottom: 4,
@@ -99,11 +98,24 @@ export const packingSlipStyles = StyleSheet.create({
     fontSize: 8,
     color: '#666666',
   },
-  checkbox: {
-    width: 14,
-    height: 14,
+  checklist: {
+    marginTop: 12,
+    flexDirection: 'column',
+    gap: 4,
+  },
+  checklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  checklistBox: {
+    width: 10,
+    height: 10,
     borderWidth: 1,
     borderColor: '#000000',
+  },
+  checklistText: {
+    fontSize: 9,
   },
   totalRow: {
     flexDirection: 'row',
@@ -179,9 +191,9 @@ export function PackingSlipPage({ order }) {
         <View style={packingSlipStyles.addressBlock}>
           <Text style={packingSlipStyles.sectionTitle}>SHIP FROM</Text>
           <Text style={packingSlipStyles.boldText}>CHRONYX</Text>
+          <Text style={packingSlipStyles.textLine}>kottekattil (h), elambulassery (po)</Text>
           <Text style={packingSlipStyles.textLine}>elambulassery, Kerala - 678595</Text>
           <Text style={packingSlipStyles.textLine}>India</Text>
-          <Text style={packingSlipStyles.textLine}>ph 9562122618</Text>
         </View>
         <View style={packingSlipStyles.addressBlock}>
           <Text style={packingSlipStyles.sectionTitle}>SHIP TO</Text>
@@ -199,9 +211,8 @@ export function PackingSlipPage({ order }) {
       <View style={packingSlipStyles.table}>
         <View style={packingSlipStyles.tableHeaderRow}>
           <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colItem]}>ITEM</Text>
+          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colSku]}>SKU</Text>
           <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colQty]}>QTY</Text>
-          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colWeight]}>WEIGHT</Text>
-          <Text style={[packingSlipStyles.tableHeaderCell, packingSlipStyles.colCheck]}>CHECK</Text>
         </View>
 
         {items.map((item, index) => {
@@ -213,16 +224,12 @@ export function PackingSlipPage({ order }) {
             <View key={`${item.name || 'item'}-${index}`} style={packingSlipStyles.tableRow}>
               <View style={packingSlipStyles.colItem}>
                 <Text style={packingSlipStyles.itemName}>{item.name}</Text>
-                <Text style={packingSlipStyles.itemDesc}>SKU: {sku}</Text>
+              </View>
+              <View style={[packingSlipStyles.colSku, { justifyContent: 'center' }]}>
+                <Text>{sku}</Text>
               </View>
               <View style={[packingSlipStyles.colQty, { justifyContent: 'center' }]}>
                 <Text>{item.quantity}</Text>
-              </View>
-              <View style={[packingSlipStyles.colWeight, { justifyContent: 'center' }]}>
-                <Text>~{estWeight}</Text>
-              </View>
-              <View style={packingSlipStyles.colCheck}>
-                <View style={packingSlipStyles.checkbox} />
               </View>
             </View>
           );
@@ -232,13 +239,10 @@ export function PackingSlipPage({ order }) {
           <View style={[packingSlipStyles.colItem, { paddingVertical: 12 }]}>
             <Text style={packingSlipStyles.itemName}>Total items</Text>
           </View>
+          <View style={[packingSlipStyles.colSku, { paddingVertical: 12 }]} />
           <View style={[packingSlipStyles.colQty, { paddingVertical: 12, justifyContent: 'center' }]}>
             <Text style={{ fontFamily: 'Helvetica-Bold' }}>{totalQty}</Text>
           </View>
-          <View style={[packingSlipStyles.colWeight, { paddingVertical: 12, justifyContent: 'center' }]}>
-            <Text>~{totalWeight} kg</Text>
-          </View>
-          <View style={packingSlipStyles.colCheck} />
         </View>
       </View>
 
@@ -248,6 +252,20 @@ export function PackingSlipPage({ order }) {
           <Text>
             Fragile handcrafted item. Wrap individually in bubble wrap. Store upright at all times. Avoid stacking or applying pressure. Keep away from moisture and direct sunlight during transit.
           </Text>
+          <View style={packingSlipStyles.checklist}>
+            <View style={packingSlipStyles.checklistItem}>
+              <View style={packingSlipStyles.checklistBox} />
+              <Text style={packingSlipStyles.checklistText}>Verify item before sealing</Text>
+            </View>
+            <View style={packingSlipStyles.checklistItem}>
+              <View style={packingSlipStyles.checklistBox} />
+              <Text style={packingSlipStyles.checklistText}>Ensure proper cushioning</Text>
+            </View>
+            <View style={packingSlipStyles.checklistItem}>
+              <View style={packingSlipStyles.checklistBox} />
+              <Text style={packingSlipStyles.checklistText}>Seal package securely</Text>
+            </View>
+          </View>
         </View>
         <View style={{ alignItems: 'center' }}>
           <View style={{ width: 40, height: 40, flexWrap: 'wrap', flexDirection: 'row', gap: 2, marginBottom: 4 }}>
