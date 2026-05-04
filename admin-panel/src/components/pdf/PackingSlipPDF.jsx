@@ -179,9 +179,9 @@ export function PackingSlipPage({ order }) {
         <View style={packingSlipStyles.addressBlock}>
           <Text style={packingSlipStyles.sectionTitle}>SHIP FROM</Text>
           <Text style={packingSlipStyles.boldText}>CHRONYX</Text>
-          <Text style={packingSlipStyles.textLine}>Kanayannur, Kerala</Text>
-          <Text style={packingSlipStyles.textLine}>India - 682301</Text>
-          <Text style={packingSlipStyles.textLine}>+91 99999 00000</Text>
+          <Text style={packingSlipStyles.textLine}>elambulassery, Kerala - 678595</Text>
+          <Text style={packingSlipStyles.textLine}>India</Text>
+          <Text style={packingSlipStyles.textLine}>ph 9562122618</Text>
         </View>
         <View style={packingSlipStyles.addressBlock}>
           <Text style={packingSlipStyles.sectionTitle}>SHIP TO</Text>
@@ -192,7 +192,7 @@ export function PackingSlipPage({ order }) {
               {address.city} - {address.pincode}
             </Text>
           ) : null}
-          {address.phone ? <Text style={packingSlipStyles.textLine}>{address.phone}</Text> : null}
+          {address.phone ? <Text style={packingSlipStyles.textLine}>Phone: {address.phone}</Text> : null}
         </View>
       </View>
 
@@ -246,7 +246,7 @@ export function PackingSlipPage({ order }) {
         <View style={packingSlipStyles.notesText}>
           <Text style={packingSlipStyles.sectionTitle}>PACKING NOTES</Text>
           <Text>
-            Fragile wooden clock. Wrap in bubble wrap. Keep upright. Handle with care. Do not stack heavy items on top.
+            Fragile handcrafted item. Wrap individually in bubble wrap. Store upright at all times. Avoid stacking or applying pressure. Keep away from moisture and direct sunlight during transit.
           </Text>
         </View>
         <View style={{ alignItems: 'center' }}>
@@ -265,8 +265,8 @@ export function PackingSlipPage({ order }) {
           <Text style={packingSlipStyles.footerText}>Time, carved from wood.</Text>
         </View>
         <View>
-          <Text style={[packingSlipStyles.footerText, { textAlign: 'right', marginBottom: 4 }]}>chronyxbrand@gmail.com</Text>
-          <Text style={[packingSlipStyles.footerText, { textAlign: 'right' }]}>chronyx.in - @chronyx</Text>
+          <Text style={[packingSlipStyles.footerText, { textAlign: 'right', marginBottom: 4 }]}>chronyxbrand@gmail.com | +91 9562122618</Text>
+          <Text style={[packingSlipStyles.footerText, { textAlign: 'right' }]}>https://chronyx.in | @chronyx.ck</Text>
         </View>
       </View>
     </Page>

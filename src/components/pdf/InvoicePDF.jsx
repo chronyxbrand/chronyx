@@ -95,11 +95,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#FAFAFA',
   },
-  colItem: { width: '40%' },
-  colHsn: { width: '10%' },
+  colItem: { width: '45%' },
+  colHsn: { width: '15%', textAlign: 'center' }, // This will be used for SKU
   colQty: { width: '10%', textAlign: 'center' },
   colUnit: { width: '15%', textAlign: 'right' },
-  colGst: { width: '10%', textAlign: 'right' },
   colTotal: { width: '15%', textAlign: 'right' },
   itemName: {
     fontFamily: 'Helvetica-Bold',
@@ -198,14 +197,15 @@ const InvoicePDF = ({ order }) => {
             <Text style={styles.brandName}>CHRONYX</Text>
             <Text style={styles.tagline}>HANDCRAFTED WOODEN TIMEPIECES</Text>
             <Text style={styles.companyDetails}>chronyxbrand@gmail.com</Text>
-            <Text style={styles.companyDetails}>Kanayannur, Kerala, India</Text>
+            <Text style={styles.companyDetails}>+91 9562122618</Text>
+            <Text style={styles.companyDetails}>elambulassery, Kerala - 678595, India</Text>
+            <Text style={styles.companyDetails}>https://chronyx.in | @chronyx.ck</Text>
           </View>
           <View>
-            <Text style={styles.invoiceTitle}>TAX INVOICE</Text>
+            <Text style={styles.invoiceTitle}>INVOICE</Text>
             <Text style={styles.invoiceMeta}>Invoice #: {invoiceNo}</Text>
             <Text style={styles.invoiceMeta}>Order ID: {safeOrder.id || 'N/A'}</Text>
             <Text style={styles.invoiceMeta}>Date: {dateStr}</Text>
-            <Text style={styles.invoiceMeta}>GSTIN: 32XXXXX0000X1ZX</Text>
           </View>
         </View>
 
@@ -217,7 +217,7 @@ const InvoicePDF = ({ order }) => {
             <Text style={styles.sectionTitle}>BILL TO</Text>
             <Text style={styles.boldText}>{safeOrder.customer_name || 'Customer'}</Text>
             <Text style={styles.textLine}>{safeOrder.customer_email}</Text>
-            {safeOrder.customer_phone && <Text style={styles.textLine}>{safeOrder.customer_phone}</Text>}
+            {safeOrder.customer_phone && <Text style={styles.textLine}>Phone: {safeOrder.customer_phone}</Text>}
             <Text style={styles.textLine}>{address.address || 'Address not provided'}</Text>
             {address.city ? <Text style={styles.textLine}>{address.city} — {address.pincode}</Text> : null}
           </View>
@@ -226,26 +226,25 @@ const InvoicePDF = ({ order }) => {
             <Text style={styles.boldText}>{safeOrder.customer_name || 'Customer'}</Text>
             <Text style={styles.textLine}>{address.address || 'Address not provided'}</Text>
             {address.city ? <Text style={styles.textLine}>{address.city} — {address.pincode}</Text> : null}
-            {address.phone && <Text style={styles.textLine}>{address.phone}</Text>}
+            {address.phone && <Text style={styles.textLine}>Phone: {address.phone}</Text>}
           </View>
         </View>
 
-        {/* Table Header */}
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
             <Text style={[styles.tableHeaderCell, styles.colItem]}>ITEM</Text>
-            <Text style={[styles.tableHeaderCell, styles.colHsn]}>HSN</Text>
+            <Text style={[styles.tableHeaderCell, styles.colHsn]}>SKU</Text>
             <Text style={[styles.tableHeaderCell, styles.colQty]}>QTY</Text>
             <Text style={[styles.tableHeaderCell, styles.colUnit]}>UNIT PRICE</Text>
-            <Text style={[styles.tableHeaderCell, styles.colGst]}>GST 12%</Text>
             <Text style={[styles.tableHeaderCell, styles.colTotal]}>TOTAL</Text>
           </View>
 
           {/* Table Rows */}
           {items.map((item, index) => {
-            const total = item.lineTotal || 0;
-            const basePrice = total / 1.12;
-            const gstAmount = total - basePrice;
+            const total = item.lineTotal || (item.price * item.quantity) || 0;
+            const unitPrice = item.price || (total / (item.quantity || 1));
+            const isWalnut = item.name?.toLowerCase().includes('walnut');
+            const sku = `CRX-${isWalnut ? 'WN' : 'TK'}-00${index + 1}`;
 
             return (
               <View key={index} style={styles.tableRow}>
@@ -253,10 +252,9 @@ const InvoicePDF = ({ order }) => {
                   <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemDesc}>Silent sweep wooden clock</Text>
                 </View>
-                <Text style={[styles.textLine, styles.colHsn]}>9405</Text>
+                <Text style={[styles.textLine, styles.colHsn]}>{sku}</Text>
                 <Text style={[styles.textLine, styles.colQty]}>{item.quantity}</Text>
-                <Text style={[styles.textLine, styles.colUnit]}>{formatCurrency(basePrice)}</Text>
-                <Text style={[styles.textLine, styles.colGst]}>{formatCurrency(gstAmount)}</Text>
+                <Text style={[styles.textLine, styles.colUnit]}>{formatCurrency(unitPrice)}</Text>
                 <Text style={[styles.textLine, styles.colTotal]}>{formatCurrency(total)}</Text>
               </View>
             );
@@ -282,11 +280,6 @@ const InvoicePDF = ({ order }) => {
             </View>
           )}
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>GST (12% included)</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(itemsSum - (itemsSum / 1.12))}</Text>
-          </View>
-
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total paid</Text>
             <Text style={styles.totalValue}>{formatCurrency(safeOrder.total || itemsSum)}</Text>
@@ -301,7 +294,7 @@ const InvoicePDF = ({ order }) => {
               <Text style={styles.footerText}>Ref: {safeOrder.razorpay_payment_id}</Text>
             )}
         <Text style={[styles.footerText, { marginTop: 4 }]}>Thank you for choosing CHRONYX.</Text>
-            <Text style={styles.footerText}>For support: chronyxbrand@gmail.com</Text>
+            <Text style={styles.footerText}>For support: chronyxbrand@gmail.com | +91 9562122618</Text>
           </View>
           <View>
             <Text style={styles.footerRightText}>This is a computer-generated invoice.</Text>
