@@ -34,6 +34,7 @@ import JournalArticlePage from './pages/JournalArticlePage';
 import VerifyProductPage from './pages/VerifyProductPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AccountPage from './pages/AccountPage';
+import ReviewPage from './pages/ReviewPage';
 import TrackingPage from './pages/TrackingPage';
 import PoliciesPage from './pages/PoliciesPage';
 import AuthPage from './pages/AuthPage';
@@ -440,6 +441,7 @@ function StoreApp() {
           />
           <Route path="/confirmation" element={<ConfirmationPage />} />
           <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} collections={collections} />} />
+          <Route path="/review/:orderId" element={<ReviewPage user={user} />} />
           <Route path="/about" element={<AboutPage siteContent={siteContent} />} />
           <Route path="/contact" element={<ContactPage siteContent={siteContent} storeSettings={storeSettings} />} />
           <Route

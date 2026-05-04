@@ -12,8 +12,11 @@ function AuthPage({ user }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const returnTo = searchParams.get('returnTo') || '/account';
+
   if (user) {
-    return <Navigate to="/account" replace />;
+    return <Navigate to={returnTo} replace />;
   }
 
   const handleAuth = async (e) => {

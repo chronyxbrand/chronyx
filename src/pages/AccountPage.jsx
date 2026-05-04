@@ -4,7 +4,6 @@ import { Link, Navigate } from 'react-router-dom';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';
 import InvoicePDF from '../components/pdf/InvoicePDF';
-import ReviewModal from '../components/ReviewModal';
 import { Star } from '@phosphor-icons/react';
 
 const defaultProfile = {
@@ -21,7 +20,6 @@ function AccountPage({ user }) {
   const [profileId, setProfileId] = useState('');
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [reviewOrder, setReviewOrder] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -254,10 +252,10 @@ function AccountPage({ user }) {
                               )}
                             </PDFDownloadLink>
                             {order.status === 'delivered' && (
-                              <button className="primary-btn" onClick={() => setReviewOrder(order)}>
+                              <Link to={`/review/${order.id}`} className="primary-btn" style={{ textDecoration: 'none' }}>
                                 <Star size={16} weight="fill" />
                                 Rate & Review
-                              </button>
+                              </Link>
                             )}
                           </div>
                         </article>
@@ -326,17 +324,6 @@ function AccountPage({ user }) {
           </section>
         </div>
       </section>
-
-      {reviewOrder && (
-        <ReviewModal 
-          order={reviewOrder} 
-          user={user} 
-          onClose={() => setReviewOrder(null)} 
-          onReviewSubmitted={() => {
-            window.dispatchEvent(new CustomEvent('chronyx-notice', { detail: 'Review submitted successfully. Thank you!' }));
-          }}
-        />
-      )}
     </div>
   );
 }
