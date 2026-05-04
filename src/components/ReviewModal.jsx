@@ -67,9 +67,9 @@ function ReviewModal({ order, user, onClose, onReviewSubmitted }) {
   };
 
   return (
-    <div className="exit-intent-overlay">
-      <div className="exit-intent-modal" style={{ maxWidth: '500px' }}>
-        <button className="exit-intent-close" onClick={onClose}>
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '500px', width: '90%', padding: '32px' }}>
+        <button className="close-btn" onClick={onClose} style={{ position: 'absolute', top: '24px', right: '24px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
           <X size={24} />
         </button>
         
