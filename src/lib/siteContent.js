@@ -3,21 +3,21 @@ const defaultPressMentions = ['Architectural Digest', 'Wallpaper*', 'Dwell', 'Vo
 const defaultTestimonials = [
   {
     quote:
-      "The attention to detail is staggering. It's not just a clock, it's a centerpiece that anchors my entire living room.",
-    author: 'James M.',
-    location: 'Mumbai',
+      "The teak finish perfectly complements our traditional Kerala home. It's not just a clock; it's a piece of art that anchors the living room.",
+    author: 'Harikrishnan M.',
+    location: 'Kochi',
   },
   {
     quote:
-      'I waited three months for my pre-order and it was worth every second. The wood grain is absolutely beautiful.',
-    author: 'Priya K.',
-    location: 'Delhi',
+      "I was looking for something minimalist yet warm for my studio. The silent movement is a blessing, and the craftsmanship is exquisite.",
+    author: 'Aiswarya V.',
+    location: 'Trivandrum',
   },
   {
     quote:
-      'Flawless silent movement and the finish is exquisite. CHRONYX has mastered the art of timekeeping.',
-    author: 'Arjun R.',
-    location: 'Bangalore',
+      "Received my Chronyx piece last week. The wood grain is incredibly rich in person. Proud to see such world-class quality coming from local studios.",
+    author: 'Fahad R.',
+    location: 'Kozhikode',
   },
 ];
 

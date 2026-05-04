@@ -1,26 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Star } from '@phosphor-icons/react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 import SEO from '../components/SEO';
-
-const reviews = [
-  {
-    author: 'Rahul M.',
-    text: 'Absolutely stunning. It completely transformed my living room.',
-    rating: 5,
-  },
-  {
-    author: 'Anjali D.',
-    text: 'The silent sweep movement is perfect. A true piece of art.',
-    rating: 5,
-  },
-  {
-    author: 'Vikram S.',
-    text: 'Beautiful finish and heavy wood. Feels like it will last generations.',
-    rating: 4,
-  },
-];
+import { supabase } from '../lib/supabase';
 
 const GIFT_WRAP_PRICE = 500;
 
@@ -33,12 +16,45 @@ function ProductPage({ addToCart, products = [] }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [giftWrap, setGiftWrap] = useState(false);
   const [notice, setNotice] = useState('');
+  const [productReviews, setProductReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     if (!product) return;
     setActiveImage(product.gallery?.[0] || '');
     setGiftWrap(false);
+    
+    // Fetch dynamic reviews
+    const fetchReviews = async () => {
+      setLoadingReviews(true);
+      try {
+        const { data, error } = await supabase
+          .from('product_reviews')
+          .select('*')
+          .eq('product_id', product.id)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        setProductReviews(data || []);
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+    
+    fetchReviews();
   }, [product]);
+
+  const reviewStats = useMemo(() => {
+    if (productReviews.length === 0) return { avg: 5.0, count: 0 };
+    const sum = productReviews.reduce((acc, rev) => acc + rev.rating, 0);
+    return {
+      avg: (sum / productReviews.length).toFixed(1),
+      count: productReviews.length
+    };
+  }, [productReviews]);
 
   useEffect(() => {
     if (!product?.dropDate) return undefined;
@@ -280,25 +296,34 @@ function ProductPage({ addToCart, products = [] }) {
           <div className="review-summary">
             <span className="review-stars" aria-hidden="true">
               {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={15} weight="fill" />
+                <Star key={index} size={15} weight={index < Math.round(reviewStats.avg) ? 'fill' : 'regular'} />
               ))}
             </span>
-            <span>4.9/5 (12 reviews)</span>
+            <span>{reviewStats.avg}/5 ({reviewStats.count} {reviewStats.count === 1 ? 'review' : 'reviews'})</span>
           </div>
         </div>
-        <div className="review-grid">
-          {reviews.map((review) => (
-            <article key={review.author} className="review-card">
-              <div className="review-card-stars">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} size={15} weight={index < review.rating ? 'fill' : 'regular'} />
-                ))}
-              </div>
-              <p>"{review.text}"</p>
-              <strong>{review.author}</strong>
-            </article>
-          ))}
-        </div>
+        
+        {loadingReviews ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>Loading reviews...</div>
+        ) : productReviews.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)', background: 'var(--surface-2)', borderRadius: '24px' }}>
+            <p style={{ margin: 0 }}>This timepiece doesn't have any reviews yet. Verified purchasers can leave a review from their account.</p>
+          </div>
+        ) : (
+          <div className="review-grid">
+            {productReviews.map((review) => (
+              <article key={review.id} className="review-card">
+                <div className="review-card-stars">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star key={index} size={15} weight={index < review.rating ? 'fill' : 'regular'} />
+                  ))}
+                </div>
+                {review.comment && <p>"{review.comment}"</p>}
+                <strong>{review.customer_name}</strong>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {relatedProducts.length > 0 ? (
