@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, Suspense, lazy } from 'react';
 import Lenis from 'lenis';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
@@ -21,27 +21,27 @@ import {
   loadCart,
 } from './data/store';
 import { supabase } from './lib/supabase';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import ConfirmationPage from './pages/ConfirmationPage';
-import HomePage from './pages/HomePage';
-import PaymentPage from './pages/PaymentPage';
-import ProductPage from './pages/ProductPage';
-import ShopPage from './pages/ShopPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import BlogPage from './pages/BlogPage';
-import JournalArticlePage from './pages/JournalArticlePage';
-import VerifyProductPage from './pages/VerifyProductPage';
-import NotFoundPage from './pages/NotFoundPage';
-import AccountPage from './pages/AccountPage';
-import ReviewPage from './pages/ReviewPage';
-import TrackingPage from './pages/TrackingPage';
-import PoliciesPage from './pages/PoliciesPage';
-import AuthPage from './pages/AuthPage';
-import CollectionPage from './pages/CollectionPage';
-import PlacementGuidePage from './pages/PlacementGuidePage';
-import LocationPage from './pages/LocationPage';
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const ConfirmationPage = lazy(() => import('./pages/ConfirmationPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const ProductPage = lazy(() => import('./pages/ProductPage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const JournalArticlePage = lazy(() => import('./pages/JournalArticlePage'));
+const VerifyProductPage = lazy(() => import('./pages/VerifyProductPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const ReviewPage = lazy(() => import('./pages/ReviewPage'));
+const TrackingPage = lazy(() => import('./pages/TrackingPage'));
+const PoliciesPage = lazy(() => import('./pages/PoliciesPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const CollectionPage = lazy(() => import('./pages/CollectionPage'));
+const PlacementGuidePage = lazy(() => import('./pages/PlacementGuidePage'));
+const LocationPage = lazy(() => import('./pages/LocationPage'));
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -395,88 +395,90 @@ function StoreApp() {
         ) : loadingProducts ? (
           <div style={{ padding: '100px', textAlign: 'center' }}>Loading store...</div>
         ) : (
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <HomePage
-                addToCart={addToCart}
-                deliveryDate={deliveryDate}
-                setNotice={setNotice}
-                products={products}
-                collections={collections}
-                siteContent={siteContent}
-              />
-            }
-          />
-          <Route
-            path="/products/:productId"
-            element={<ProductPage addToCart={addToCart} products={products} />}
-          />
-          <Route path="/verify/unit/:unitId" element={<VerifyProductPage products={products} />} />
-          <Route
-            path="/cart"
-            element={
-              <CartPage
-                cartItems={cartItems}
-                cartTotal={cartTotal}
-                updateCartQuantity={updateCartQuantity}
-                clearCart={clearCart}
-                products={products}
-                user={user}
-                storeSettings={storeSettings}
-              />
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <CheckoutPage
-                cartItems={cartItems}
-                cartTotal={cartTotal}
-                shipping={shipping}
-                setShipping={setShipping}
-                user={user}
-              />
-            }
-          />
-          <Route
-            path="/payment"
-            element={
-              <PaymentPage
-                cartItems={cartItems}
-                cartTotal={cartTotal}
-                shipping={shipping}
-                payment={payment}
-                setPayment={setPayment}
-                clearCart={clearCart}
-                setNotice={setNotice}
-                refreshProducts={fetchProducts}
-              />
-            }
-          />
-          <Route path="/confirmation" element={<ConfirmationPage />} />
-          <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} collections={collections} />} />
-          <Route path="/collections/:slug" element={<CollectionPage products={products} collections={collections} addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} />} />
-          <Route path="/review/:orderId" element={<ReviewPage user={user} />} />
-          <Route path="/about" element={<AboutPage siteContent={siteContent} />} />
-          <Route path="/contact" element={<ContactPage siteContent={siteContent} storeSettings={storeSettings} />} />
-          <Route
-            path="/blog"
-            element={storeSettings.show_journal ? <BlogPage /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/journal/:slug"
-            element={storeSettings.show_journal ? <JournalArticlePage products={products} /> : <Navigate to="/" replace />}
-          />
-          <Route path="/account" element={<AccountPage user={user} />} />
-          <Route path="/auth" element={<AuthPage user={user} />} />
-          <Route path="/track" element={<TrackingPage />} />
-          <Route path="/policies" element={<PoliciesPage siteContent={siteContent} />} />
-          <Route path="/guides/wall-clock-placement" element={<PlacementGuidePage />} />
-          <Route path="/locations/:city" element={<LocationPage products={products} />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <Suspense fallback={<div className="page-stack" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="loader"></div></div>}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <HomePage
+                  addToCart={addToCart}
+                  deliveryDate={deliveryDate}
+                  setNotice={setNotice}
+                  products={products}
+                  collections={collections}
+                  siteContent={siteContent}
+                />
+              }
+            />
+            <Route
+              path="/products/:productId"
+              element={<ProductPage addToCart={addToCart} products={products} />}
+            />
+            <Route path="/verify/unit/:unitId" element={<VerifyProductPage products={products} />} />
+            <Route
+              path="/cart"
+              element={
+                <CartPage
+                  cartItems={cartItems}
+                  cartTotal={cartTotal}
+                  updateCartQuantity={updateCartQuantity}
+                  clearCart={clearCart}
+                  products={products}
+                  user={user}
+                  storeSettings={storeSettings}
+                />
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <CheckoutPage
+                  cartItems={cartItems}
+                  cartTotal={cartTotal}
+                  shipping={shipping}
+                  setShipping={setShipping}
+                  user={user}
+                />
+              }
+            />
+            <Route
+              path="/payment"
+              element={
+                <PaymentPage
+                  cartItems={cartItems}
+                  cartTotal={cartTotal}
+                  shipping={shipping}
+                  payment={payment}
+                  setPayment={setPayment}
+                  clearCart={clearCart}
+                  setNotice={setNotice}
+                  refreshProducts={fetchProducts}
+                />
+              }
+            />
+            <Route path="/confirmation" element={<ConfirmationPage />} />
+            <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} collections={collections} />} />
+            <Route path="/collections/:slug" element={<CollectionPage products={products} collections={collections} addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} />} />
+            <Route path="/review/:orderId" element={<ReviewPage user={user} />} />
+            <Route path="/about" element={<AboutPage siteContent={siteContent} />} />
+            <Route path="/contact" element={<ContactPage siteContent={siteContent} storeSettings={storeSettings} />} />
+            <Route
+              path="/blog"
+              element={storeSettings.show_journal ? <BlogPage /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/journal/:slug"
+              element={storeSettings.show_journal ? <JournalArticlePage products={products} /> : <Navigate to="/" replace />}
+            />
+            <Route path="/account" element={<AccountPage user={user} />} />
+            <Route path="/auth" element={<AuthPage user={user} />} />
+            <Route path="/track" element={<TrackingPage />} />
+            <Route path="/policies" element={<PoliciesPage siteContent={siteContent} />} />
+            <Route path="/guides/wall-clock-placement" element={<PlacementGuidePage />} />
+            <Route path="/locations/:city" element={<LocationPage products={products} />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
         )}
         </div>
       </main>

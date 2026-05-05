@@ -3,6 +3,7 @@ import { ArrowRight, Cube, Gauge, MoonStars } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 import SEO from '../components/SEO';
+import { optimizeImage } from '../lib/optimizeImage';
 
 function HomePage({ products = [], siteContent }) {
   const homepageContent = siteContent?.homepageContent || {};
@@ -127,7 +128,7 @@ function HomePage({ products = [], siteContent }) {
         {heroImage ? (
           <div className="home-v2-hero-visual">
             <div className="hero-product-stage" style={{ transform: `scale(${heroScale})` }}>
-              <img src={heroImage} alt={heroProduct?.name || 'Chronyx clock'} loading="eager" />
+              <img src={optimizeImage(heroImage, 1200)} alt={heroProduct?.name || 'Chronyx clock'} loading="eager" fetchpriority="high" width="1200" height="1500" style={{ width: '100%', height: 'auto', aspectRatio: '4/5', objectFit: 'cover' }} />
             </div>
           </div>
         ) : null}
@@ -147,7 +148,7 @@ function HomePage({ products = [], siteContent }) {
               </Link>
             </div>
             <div className="feature-media">
-              <img src={signatureImage} alt={heroProduct.name} loading="lazy" />
+              <img src={optimizeImage(signatureImage)} alt={heroProduct.name} loading="lazy" width="800" height="1000" style={{ width: '100%', height: 'auto', aspectRatio: '4/5', objectFit: 'cover' }} />
             </div>
           </div>
         </section>
@@ -157,7 +158,7 @@ function HomePage({ products = [], siteContent }) {
         <section className="home-v2-feature home-v2-feature-secondary">
           <div className="home-v2-shell home-v2-feature-grid">
             <div className="feature-media">
-              <img src={featureImage} alt={featureProduct.name} loading="lazy" />
+              <img src={optimizeImage(featureImage)} alt={featureProduct.name} loading="lazy" width="800" height="1000" style={{ width: '100%', height: 'auto', aspectRatio: '4/5', objectFit: 'cover' }} />
             </div>
             <div className="feature-copy">
               <p className="feature-kicker">Material First</p>
@@ -209,7 +210,7 @@ function HomePage({ products = [], siteContent }) {
               {shopPreview.map((product) => (
                 <Link key={product.id} className="home-v2-product-card" to={`/products/${product.id}`}>
                   <div className="home-v2-product-image">
-                    <img src={product.hero} alt={product.name} loading="lazy" />
+                    <img src={optimizeImage(product.hero, 600)} alt={product.name} loading="lazy" width="600" height="750" style={{ width: '100%', height: 'auto', aspectRatio: '4/5', objectFit: 'cover' }} />
                   </div>
                   <div className="home-v2-product-copy">
                     <h3>{product.name}</h3>
@@ -257,7 +258,7 @@ function HomePage({ products = [], siteContent }) {
 
             {activeProcessStep.image ? (
               <div className="process-image">
-                <img src={activeProcessStep.image} alt={activeProcessStep.title} loading="lazy" />
+                <img src={optimizeImage(activeProcessStep.image, 1000)} alt={activeProcessStep.title} loading="lazy" width="1000" height="800" style={{ width: '100%', height: 'auto', aspectRatio: '5/4', objectFit: 'cover' }} />
               </div>
             ) : null}
           </div>

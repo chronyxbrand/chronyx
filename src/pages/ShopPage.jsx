@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 import { Heart } from '@phosphor-icons/react';
 import SEO from '../components/SEO';
+import { optimizeImage } from '../lib/optimizeImage';
 
 function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [], collections = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,7 +170,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
               <article className="product-card" key={product.id}>
                 <div style={{ position: 'relative' }}>
                   <Link className="product-image-link hover-zoom" to={`/products/${product.id}`}>
-                    <img src={product.hero} alt={`${product.name} - Luxury ${product.category} Wall Clock`} loading="lazy" />
+                    <img src={optimizeImage(product.hero)} alt={`${product.name} - Luxury ${product.category} Wall Clock`} loading="lazy" width="800" height="1000" style={{ width: '100%', height: 'auto', aspectRatio: '4/5', objectFit: 'cover' }} />
                   </Link>
                   <button 
                     className="icon-btn wishlist-floating-btn"
@@ -237,9 +238,12 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                 >
                   {col.image_url && (
                     <img
-                      src={col.image_url}
+                      src={optimizeImage(col.image_url)}
                       alt={`${col.title} - CHRONYX luxury wooden wall clock collection`}
                       loading="lazy"
+                      width="800"
+                      height="800"
+                      style={{ width: '100%', height: 'auto', aspectRatio: '1/1', objectFit: 'cover' }}
                     />
                   )}
                   <div className="collection-discovery-copy">
