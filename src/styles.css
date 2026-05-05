@@ -4847,3 +4847,146 @@ select:focus {
   }
 }
 
+@media (max-width: 720px) {
+  html,
+  body,
+  #root,
+  .chronyx-app {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .app-main {
+    width: 100%;
+    padding: 82px 12px 28px;
+  }
+
+  .page-stack,
+  .route-motion-stage,
+  section,
+  .home-v2-shell {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home-v2-hero,
+  .home-v2-feature,
+  .home-v2-process,
+  .home-v2-shop-preview,
+  .home-v2-social-proof,
+  .home-v2-values,
+  .home-v2-statement,
+  .home-v2-final-cta {
+    width: 100%;
+    overflow: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .home-v2-hero {
+    padding-top: 96px;
+    padding-bottom: 48px;
+  }
+
+  .home-v2-hero-copy h1 {
+    font-size: clamp(2.7rem, 15vw, 4.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+
+  .home-v2-hero-visual,
+  .feature-media,
+  .process-image,
+  .home-v2-product-image,
+  .product-image-link,
+  .collection-discovery-card {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .hero-product-stage {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    transform: none !important;
+  }
+
+  .hero-product-stage img,
+  .feature-media img,
+  .process-image img,
+  .home-v2-product-image img,
+  .product-card img,
+  .collection-discovery-card img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .feature-media img {
+    aspect-ratio: 4 / 3;
+    border-radius: 18px;
+  }
+
+  .home-v2-social-proof {
+    padding-bottom: 96px;
+  }
+
+  .home-v2-social-proof .home-v2-heading h2 {
+    font-size: clamp(2rem, 10vw, 3rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+
+  .home-v2-social-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .testimonial-quote-card {
+    padding: 22px;
+  }
+
+  .shop-controls {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .shop-filter-sort {
+    grid-column: 1 / -1;
+  }
+
+  .filter-group,
+  .sort-group {
+    min-width: 0;
+  }
+
+  .product-card-copy {
+    padding: 16px 4px 0;
+  }
+
+  .product-top {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-top .label {
+    overflow-wrap: anywhere;
+  }
+
+  .account-sidebar,
+  .account-panel,
+  .account-stat-card {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .whatsapp-widget {
+    right: 16px;
+    left: auto;
+    bottom: 16px;
+  }
+}
+

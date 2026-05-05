@@ -88,7 +88,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
       <section className="catalog-section">
         {!showWishlistOnly && (
           <div className="shop-controls" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-            <div className="filter-group">
+            <div className="filter-group shop-filter-category">
               <label htmlFor="categoryFilter" className="label" style={{ marginRight: '8px' }}>Category:</label>
               <select 
                 id="categoryFilter" 
@@ -101,7 +101,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                 ))}
               </select>
             </div>
-            <div className="filter-group">
+            <div className="filter-group shop-filter-collection">
               <label htmlFor="collectionFilter" className="label" style={{ marginRight: '8px' }}>Collection:</label>
               <select
                 id="collectionFilter"
@@ -123,7 +123,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                 ))}
               </select>
             </div>
-            <div className="sort-group">
+            <div className="sort-group shop-filter-sort">
               <label htmlFor="sortFilter" className="label" style={{ marginRight: '8px' }}>Sort by:</label>
               <select 
                 id="sortFilter" 
@@ -214,7 +214,8 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
               </article>
             ))}
           </div>
-        )}\n      </section>
+        )}
+      </section>
 
       {/* Browse Collections Discovery Block */}
       {collections.filter(c => c.is_visible).length > 0 && (
