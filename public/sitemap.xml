@@ -36,6 +36,36 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://chronyx.in/locations/mumbai</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/locations/delhi</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/locations/bangalore</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/locations/hyderabad</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/locations/pune</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/locations/chennai</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://chronyx.in/products/d3aaf71e-d748-4f34-b6ed-acae5ec76cf3</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
