@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID;
+const KLAVIYO_COMPANY_ID = import.meta.env.VITE_KLAVIYO_COMPANY_ID;
 
 function injectScriptOnce(id, src, inlineCode) {
   if (document.getElementById(id)) return;
@@ -57,6 +58,15 @@ export default function Analytics() {
           fbq('init', '${META_PIXEL_ID}');
           fbq('track', 'PageView');
         `,
+      );
+    }
+
+    if (KLAVIYO_COMPANY_ID) {
+      window._klOnsite = window._klOnsite || [];
+      window.klaviyo = window.klaviyo || [];
+      injectScriptOnce(
+        'chronyx-klaviyo',
+        `https://static.klaviyo.com/onsite/js/klaviyo.js?company_id=${encodeURIComponent(KLAVIYO_COMPANY_ID)}`,
       );
     }
   }, []);
