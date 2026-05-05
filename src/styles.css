@@ -3500,7 +3500,7 @@ select:focus {
 .home-v2-hero-copy h1 {
   margin: 0;
   color: #000;
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: clamp(3.3rem, 7vw, 6.4rem);
   font-weight: 600;
   line-height: 0.96;
@@ -3510,6 +3510,7 @@ select:focus {
 .home-v2-hero-copy p {
   margin: 0;
   color: #4b5563;
+  font-family: var(--font-display);
   font-size: clamp(1.02rem, 2vw, 1.35rem);
   line-height: 1.6;
 }
@@ -3576,6 +3577,7 @@ select:focus {
 .feature-copy h2 {
   margin: 0;
   color: #000;
+  font-family: var(--font-display);
   font-size: clamp(2.2rem, 4vw, 4rem);
   line-height: 1.02;
   letter-spacing: -0.04em;
@@ -3584,6 +3586,7 @@ select:focus {
 .feature-copy p {
   margin: 0;
   color: #4b5563;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   line-height: 1.7;
 }
@@ -3634,11 +3637,13 @@ select:focus {
 
 .value-item h3 {
   color: #000;
+  font-family: var(--font-display);
   font-size: 1.1rem;
 }
 
 .value-item p {
   color: #6b7280;
+  font-family: var(--font-display);
   font-size: 0.95rem;
 }
 
@@ -3654,6 +3659,7 @@ select:focus {
   margin: 0;
   max-width: 18ch;
   color: #111827;
+  font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 500;
   line-height: 1.08;
@@ -3715,6 +3721,7 @@ select:focus {
 .home-v2-product-copy span {
   margin: 0;
   color: #000;
+  font-family: var(--font-display);
 }
 
 .home-v2-actions {
@@ -3786,6 +3793,7 @@ select:focus {
 
 .process-stage-copy h3 {
   color: #000;
+  font-family: var(--font-display);
   font-size: clamp(1.6rem, 3vw, 2.4rem);
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -3793,6 +3801,7 @@ select:focus {
 
 .process-stage-copy p {
   color: #4b5563;
+  font-family: var(--font-display);
   font-size: 1rem;
   line-height: 1.75;
 }
@@ -3829,6 +3838,7 @@ select:focus {
 .home-v2-social-copy p {
   margin: 0;
   color: #4b5563;
+  font-family: var(--font-display);
   font-size: 1rem;
   line-height: 1.75;
 }
@@ -3848,6 +3858,7 @@ select:focus {
 
 .home-v2-social-stats strong {
   color: #000;
+  font-family: var(--font-display);
   font-size: 1.5rem;
   line-height: 1;
 }
@@ -4135,6 +4146,7 @@ select:focus {
 
 .final-cta-copy h2 {
   color: #fff;
+  font-family: var(--font-display);
   font-size: clamp(2.4rem, 4.5vw, 4.5rem);
   line-height: 1;
   letter-spacing: -0.05em;
@@ -4142,6 +4154,7 @@ select:focus {
 
 .final-cta-copy p {
   color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-display);
   font-size: 1.05rem;
 }
 

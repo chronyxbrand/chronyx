@@ -207,6 +207,7 @@ function StoreApp() {
 
   const location = useLocation();
   const mainRef = useRef(null);
+  const lenisRef = useRef(null);
 
   const cartItems = cart
     .map((item) => {
@@ -244,6 +245,7 @@ function StoreApp() {
 
   useEffect(() => {
     const lenis = new Lenis({ duration: 1.05, smoothWheel: true, smoothTouch: false });
+    lenisRef.current = lenis;
     let frame = 0;
 
     const raf = (time) => {
@@ -254,38 +256,35 @@ function StoreApp() {
     frame = window.requestAnimationFrame(raf);
     return () => {
       window.cancelAnimationFrame(frame);
+      lenisRef.current = null;
       lenis.destroy();
     };
   }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    
-    if (mainRef.current) {
-      gsap.fromTo(mainRef.current, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' });
+    const lenis = lenisRef.current;
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    ScrollTrigger.clearScrollMemory('manual');
+
+    if (lenis) {
+      lenis.stop();
+      lenis.scrollTo(0, { immediate: true, force: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
 
-    const timer = setTimeout(() => {
-      const sections = document.querySelectorAll('section');
-      sections.forEach(section => {
-        gsap.fromTo(section, 
-          { opacity: 0, y: 30 },
-          { 
-            opacity: 1, 
-            y: 0, 
-            duration: 0.8, 
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 85%',
-              toggleActions: 'play none none none'
-            }
-          }
-        );
-      });
-    }, 100);
+    if (mainRef.current) {
+      gsap.set(mainRef.current, { clearProps: 'opacity,transform' });
+    }
 
-    return () => clearTimeout(timer);
+    const resumeId = window.requestAnimationFrame(() => {
+      if (lenis) {
+        lenis.start();
+      }
+      ScrollTrigger.refresh();
+    });
+
+    return () => window.cancelAnimationFrame(resumeId);
   }, [location.pathname]);
 
   useEffect(() => {
