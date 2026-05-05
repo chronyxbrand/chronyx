@@ -228,63 +228,12 @@ button {
 }
 
 .route-motion-stage {
-  animation: routeContentRise 0.68s cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation: routeSoftEnter 220ms ease-out both;
   transform-origin: 50% 0;
 }
 
 .route-motion-stage > * {
-  will-change: opacity, transform, filter;
-}
-
-.page-transition-veil {
-  position: fixed;
-  inset: 0;
-  z-index: 95;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(179, 139, 89, 0.22), transparent 34%),
-    linear-gradient(115deg, rgba(20, 15, 10, 0), rgba(20, 15, 10, 0.88) 38%, rgba(20, 15, 10, 0.96) 62%, rgba(20, 15, 10, 0));
-  clip-path: inset(0 100% 0 0);
-  animation: routeVeilSweep 0.76s cubic-bezier(0.76, 0, 0.24, 1) both;
-}
-
-.page-transition-grain {
-  position: absolute;
-  inset: -20%;
-  opacity: 0.12;
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.24) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(0deg, rgba(179, 139, 89, 0.2) 0 1px, transparent 1px 11px);
-  transform: rotate(-8deg) scale(1.2);
-  animation: routeGrainDrift 0.76s cubic-bezier(0.76, 0, 0.24, 1) both;
-}
-
-.page-transition-line {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(180deg, transparent, rgba(247, 229, 198, 0.8), transparent);
-  transform: scaleY(0);
-  transform-origin: center;
-  animation: routeLineReveal 0.76s cubic-bezier(0.76, 0, 0.24, 1) both;
-}
-
-.page-transition-veil span {
-  position: relative;
-  z-index: 1;
-  color: #f7e5c6;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  opacity: 0;
-  transform: translateY(10px);
-  animation: routeLabelReveal 0.62s cubic-bezier(0.19, 1, 0.22, 1) both;
+  will-change: opacity, transform;
 }
 
 section {
@@ -4256,73 +4205,14 @@ select:focus {
   }
 }
 
-@keyframes routeContentRise {
-  0% {
+@keyframes routeSoftEnter {
+  from {
     opacity: 0;
-    filter: blur(10px);
-    transform: translateY(18px) scale(0.992);
+    transform: translateY(6px);
   }
-  42% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes routeVeilSweep {
-  0% {
-    clip-path: inset(0 100% 0 0);
-  }
-  38% {
-    clip-path: inset(0 0 0 0);
-  }
-  64% {
-    clip-path: inset(0 0 0 0);
-  }
-  100% {
-    clip-path: inset(0 0 0 100%);
-  }
-}
-
-@keyframes routeGrainDrift {
-  0% {
-    transform: translateX(-4%) rotate(-8deg) scale(1.2);
-  }
-  100% {
-    transform: translateX(4%) rotate(-8deg) scale(1.2);
-  }
-}
-
-@keyframes routeLineReveal {
-  0%,
-  100% {
-    transform: scaleY(0);
-    opacity: 0;
-  }
-  35%,
-  65% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-}
-
-@keyframes routeLabelReveal {
-  0%,
-  22% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  44%,
-  72% {
+  to {
     opacity: 1;
     transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-8px);
   }
 }
 
@@ -4930,10 +4820,6 @@ select:focus {
 @media (prefers-reduced-motion: reduce) {
   .route-motion-stage {
     animation: none;
-  }
-
-  .page-transition-veil {
-    display: none;
   }
 }
 

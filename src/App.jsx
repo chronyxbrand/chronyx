@@ -12,7 +12,6 @@ import ExitIntentPopup from './components/ExitIntentPopup';
 import BackToTop from './components/BackToTop';
 import Analytics from './components/Analytics';
 import SiteSchemas from './components/SiteSchemas';
-import PageTransitionVeil from './components/PageTransitionVeil';
 import { buildSiteContent, defaultSiteContent } from './lib/siteContent';
 
 import {
@@ -382,7 +381,6 @@ function StoreApp() {
       />
 
       <main className="app-main" ref={mainRef}>
-        <PageTransitionVeil pathname={location.pathname} />
         <div className="route-motion-stage" key={location.pathname}>
         {storeSettings.maintenance_mode ? (
           <section className="page-stack">
