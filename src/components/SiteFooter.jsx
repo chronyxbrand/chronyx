@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function SiteFooter({ storeName = 'CHRONYX' }) {
+function SiteFooter({ storeName = 'CHRONYX', showJournal = false }) {
   return (
     <footer className="site-footer site-footer-v2">
       <div className="site-footer-shell">
@@ -14,6 +14,7 @@ function SiteFooter({ storeName = 'CHRONYX' }) {
         <div className="site-footer-links">
           <Link to="/about">About</Link>
           <Link to="/contact">Contact</Link>
+          {showJournal && <Link to="/blog">Journal</Link>}
           <a href="https://instagram.com/chronyx.studio" target="_blank" rel="noreferrer">
             Instagram
           </a>

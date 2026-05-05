@@ -11,6 +11,7 @@ import ConsentPrompt from './components/ConsentPrompt';
 import ExitIntentPopup from './components/ExitIntentPopup';
 import BackToTop from './components/BackToTop';
 import Analytics from './components/Analytics';
+import SiteSchemas from './components/SiteSchemas';
 import { buildSiteContent, defaultSiteContent } from './lib/siteContent';
 
 import {
@@ -38,6 +39,8 @@ import ReviewPage from './pages/ReviewPage';
 import TrackingPage from './pages/TrackingPage';
 import PoliciesPage from './pages/PoliciesPage';
 import AuthPage from './pages/AuthPage';
+import CollectionPage from './pages/CollectionPage';
+import PlacementGuidePage from './pages/PlacementGuidePage';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -138,7 +141,18 @@ function StoreApp() {
           gallery: gallery,
           summary: p.summary,
           story: p.story || p.description,
-          features: p.features || []
+          features: p.features || [],
+          created_at: p.created_at,
+          video_url: p.video_url || '',
+          video_embed_url: p.video_embed_url || '',
+          video_thumbnail_url: p.video_thumbnail_url || '',
+          video_title: p.video_title || '',
+          video_description: p.video_description || '',
+          video_duration_seconds: p.video_duration_seconds || null,
+          video_upload_date: p.video_upload_date || null,
+          video_view_count: p.video_view_count || 0,
+          video_transcript: p.video_transcript || '',
+          video_srt_url: p.video_srt_url || '',
         };
       });
 
@@ -348,6 +362,7 @@ function StoreApp() {
   return (
     <div className="chronyx-app">
       <Analytics />
+      <SiteSchemas />
       <div className={splashDone ? 'splash-screen is-hidden' : 'splash-screen'}>
         <span>CHRONYX</span>
       </div>
@@ -441,6 +456,7 @@ function StoreApp() {
           />
           <Route path="/confirmation" element={<ConfirmationPage />} />
           <Route path="/shop" element={<ShopPage addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} products={products} collections={collections} />} />
+          <Route path="/collections/:slug" element={<CollectionPage products={products} collections={collections} addToCart={addToCart} setNotice={setNotice} toggleWishlist={toggleWishlist} wishlist={wishlist} />} />
           <Route path="/review/:orderId" element={<ReviewPage user={user} />} />
           <Route path="/about" element={<AboutPage siteContent={siteContent} />} />
           <Route path="/contact" element={<ContactPage siteContent={siteContent} storeSettings={storeSettings} />} />
@@ -450,12 +466,13 @@ function StoreApp() {
           />
           <Route
             path="/journal/:slug"
-            element={storeSettings.show_journal ? <JournalArticlePage /> : <Navigate to="/" replace />}
+            element={storeSettings.show_journal ? <JournalArticlePage products={products} /> : <Navigate to="/" replace />}
           />
           <Route path="/account" element={<AccountPage user={user} />} />
           <Route path="/auth" element={<AuthPage user={user} />} />
           <Route path="/track" element={<TrackingPage />} />
           <Route path="/policies" element={<PoliciesPage siteContent={siteContent} />} />
+          <Route path="/guides/wall-clock-placement" element={<PlacementGuidePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         )}

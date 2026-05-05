@@ -75,8 +75,10 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
   return (
     <div className="page-stack">
       <SEO 
-        title="Full Collection" 
-        description="Shop the entire CHRONYX collection of luxury wooden wall clocks." 
+        title="Luxury Wooden Wall Clocks | The Full Collection" 
+        description="Shop the entire CHRONYX collection of luxury wooden wall clocks. Find the perfect minimalist, silent timepiece for your home or office." 
+        path="/shop"
+        noindex={searchParams.toString().length > 0}
       />
       <section className="page-header-panel">
         <p className="label">{showWishlistOnly ? 'Your Saved Items' : 'Collection'}</p>
@@ -167,7 +169,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
               <article className="product-card" key={product.id}>
                 <div style={{ position: 'relative' }}>
                   <Link className="product-image-link hover-zoom" to={`/products/${product.id}`}>
-                    <img src={product.hero} alt={product.name} loading="lazy" />
+                    <img src={product.hero} alt={`${product.name} - Luxury ${product.category} Wall Clock`} loading="lazy" />
                   </Link>
                   <button 
                     className="icon-btn wishlist-floating-btn"
@@ -212,8 +214,42 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
               </article>
             ))}
           </div>
-        )}
-      </section>
+        )}\n      </section>
+
+      {/* Browse Collections Discovery Block */}
+      {collections.filter(c => c.is_visible).length > 0 && (
+        <section className="catalog-section">
+          <div className="section-heading">
+            <p className="label">Shop by Collection</p>
+            <h2>Browse Our Collections</h2>
+          </div>
+          <div className="collection-discovery-grid">
+            {collections
+              .filter(c => c.is_visible)
+              .slice(0, 4)
+              .map(col => (
+                <Link
+                  key={col.id}
+                  to={`/collections/${col.slug}`}
+                  className="collection-discovery-card"
+                  aria-label={`Browse the ${col.title} collection`}
+                >
+                  {col.image_url && (
+                    <img
+                      src={col.image_url}
+                      alt={`${col.title} - CHRONYX luxury wooden wall clock collection`}
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="collection-discovery-copy">
+                    <h3>{col.title}</h3>
+                    {col.subtitle && <p>{col.subtitle}</p>}
+                  </div>
+                </Link>
+              ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

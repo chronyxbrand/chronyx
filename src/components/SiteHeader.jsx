@@ -2,16 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { List, ShoppingBagOpen, X } from '@phosphor-icons/react';
 import { Link, useLocation } from 'react-router-dom';
 
-const navigationLinks = [
+const baseNavigationLinks = [
   { label: 'Shop', path: '/shop' },
   { label: 'About', path: '/about' },
   { label: 'Contact', path: '/contact' },
 ];
 
-function SiteHeader({ cartCount, notice, setNotice, storeName = 'CHRONYX', user = null }) {
+function SiteHeader({ cartCount, notice, setNotice, storeName = 'CHRONYX', user = null, showJournal = false }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+
+  const navigationLinks = [
+    ...baseNavigationLinks,
+    ...(showJournal ? [{ label: 'Journal', path: '/blog' }] : []),
+  ];
 
   useEffect(() => {
     const handleScroll = () => {

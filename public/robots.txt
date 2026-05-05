@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://chronyx.in/sitemap.xml
+Sitemap: https://chronyx.in/video-sitemap.xml

@@ -25,4 +25,45 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://chronyx.in/guides/wall-clock-placement</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/products/d3aaf71e-d748-4f34-b6ed-acae5ec76cf3</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/products/a5fa4523-4429-4d47-9830-65cebf7e90fa</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/products/930aa12d-3580-475c-b7cc-c2d191b487a4</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/products/b3ed2471-2542-4946-8aaf-eb7ec554ed38</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/products/01f6db5e-9d1c-4be5-9187-1704b09caa8e</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://chronyx.in/journal/timeless-elegance-teak-wall-clocks</loc>
+    <lastmod>2026-05-05T09:45:58.079Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>

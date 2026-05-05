@@ -19,6 +19,16 @@ create table "public"."products" (
     "is_live" boolean not null default false,
     "is_limited_drop" boolean not null default false,
     "drop_date" timestamp with time zone,
+    "video_url" text,
+    "video_embed_url" text,
+    "video_thumbnail_url" text,
+    "video_title" text,
+    "video_description" text,
+    "video_duration_seconds" integer,
+    "video_upload_date" timestamp with time zone,
+    "video_view_count" integer default 0,
+    "video_transcript" text,
+    "video_srt_url" text,
     "created_at" timestamp with time zone not null default now(),
     primary key ("id")
 );

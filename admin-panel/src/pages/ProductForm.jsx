@@ -29,6 +29,16 @@ const defaultFormData = {
   story: '',
   care_instructions: '',
   features: '',
+  video_url: '',
+  video_embed_url: '',
+  video_thumbnail_url: '',
+  video_title: '',
+  video_description: '',
+  video_duration_seconds: '',
+  video_upload_date: '',
+  video_view_count: '',
+  video_transcript: '',
+  video_srt_url: '',
 };
 
 function InfoPill({ icon, label, value }) {
@@ -110,6 +120,18 @@ const ProductForm = () => {
         story: product.story || product.description || '',
         care_instructions: product.care_instructions ? product.care_instructions.join('\n') : '',
         features: product.features ? product.features.join('\n') : '',
+        video_url: product.video_url || '',
+        video_embed_url: product.video_embed_url || '',
+        video_thumbnail_url: product.video_thumbnail_url || '',
+        video_title: product.video_title || '',
+        video_description: product.video_description || '',
+        video_duration_seconds: product.video_duration_seconds || '',
+        video_upload_date: product.video_upload_date
+          ? new Date(product.video_upload_date).toISOString().slice(0, 16)
+          : '',
+        video_view_count: product.video_view_count || '',
+        video_transcript: product.video_transcript || '',
+        video_srt_url: product.video_srt_url || '',
       });
 
       setImages((productImages || []).map((img) => img.image_url));
@@ -234,6 +256,16 @@ const ProductForm = () => {
         story: formData.story,
         care_instructions: formData.care_instructions.split('\n').map((item) => item.trim()).filter(Boolean),
         features: formData.features.split('\n').map((item) => item.trim()).filter(Boolean),
+        video_url: formData.video_url.trim() || null,
+        video_embed_url: formData.video_embed_url.trim() || null,
+        video_thumbnail_url: formData.video_thumbnail_url.trim() || null,
+        video_title: formData.video_title.trim() || null,
+        video_description: formData.video_description.trim() || null,
+        video_duration_seconds: formData.video_duration_seconds ? Number(formData.video_duration_seconds) : null,
+        video_upload_date: formData.video_upload_date ? new Date(formData.video_upload_date).toISOString() : null,
+        video_view_count: formData.video_view_count ? Number(formData.video_view_count) : null,
+        video_transcript: formData.video_transcript.trim() || null,
+        video_srt_url: formData.video_srt_url.trim() || null,
       };
 
       let productId = id;
@@ -422,6 +454,48 @@ const ProductForm = () => {
             </div>
             <div className="settings-panel-body">
               <ImageUpload images={images} onImagesChange={setImages} />
+            </div>
+          </section>
+
+          <section className="settings-panel product-editor-panel">
+            <div className="settings-panel-header">
+              <div>
+                <p className="settings-panel-eyebrow">Video SEO</p>
+                <h3>Video Metadata</h3>
+                <p>Attach a hosted product video and the metadata needed for schema, transcripts, and the video sitemap.</p>
+              </div>
+            </div>
+            <div className="settings-panel-body product-editor-grid">
+              <Field label="Direct Video URL" hint="Best for tracked HTML5 playback, for example an MP4 or WebM file on Cloudinary.">
+                <input type="url" name="video_url" value={formData.video_url} onChange={handleChange} placeholder="https://res.cloudinary.com/.../chronyx-core.mp4" />
+              </Field>
+              <Field label="Embed URL" hint="Optional YouTube or Vimeo player URL if you are not self-hosting the file.">
+                <input type="url" name="video_embed_url" value={formData.video_embed_url} onChange={handleChange} placeholder="https://www.youtube.com/watch?v=..." />
+              </Field>
+              <Field label="Video Title">
+                <input type="text" name="video_title" value={formData.video_title} onChange={handleChange} placeholder="The Chronyx Core design story" />
+              </Field>
+              <Field label="Thumbnail URL">
+                <input type="url" name="video_thumbnail_url" value={formData.video_thumbnail_url} onChange={handleChange} placeholder="https://cdn.chronyx.in/video-thumbnails/core.jpg" />
+              </Field>
+              <Field label="Video Description" hint="Used in the video sitemap and VideoObject schema.">
+                <textarea name="video_description" value={formData.video_description} onChange={handleChange} rows={5} placeholder="Describe what the viewer will learn and include the core search terms naturally." />
+              </Field>
+              <Field label="Transcript" hint="This appears on the product page for SEO and accessibility.">
+                <textarea name="video_transcript" value={formData.video_transcript} onChange={handleChange} rows={7} placeholder="Paste the cleaned transcript here." />
+              </Field>
+              <Field label="Duration (seconds)">
+                <input type="number" min="0" name="video_duration_seconds" value={formData.video_duration_seconds} onChange={handleChange} placeholder="92" />
+              </Field>
+              <Field label="Upload Date">
+                <input type="datetime-local" name="video_upload_date" value={formData.video_upload_date} onChange={handleChange} />
+              </Field>
+              <Field label="View Count">
+                <input type="number" min="0" name="video_view_count" value={formData.video_view_count} onChange={handleChange} placeholder="0" />
+              </Field>
+              <Field label="Subtitle File URL" hint="Public VTT URL for in-player captions, or SRT/VTT for download.">
+                <input type="url" name="video_srt_url" value={formData.video_srt_url} onChange={handleChange} placeholder="https://cdn.chronyx.in/captions/core-en.vtt" />
+              </Field>
             </div>
           </section>
         </div>

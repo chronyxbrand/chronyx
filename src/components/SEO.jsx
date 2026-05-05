@@ -35,12 +35,15 @@ const upsertLink = (selector, rel, href) => {
   element.setAttribute('href', href);
 };
 
-export default function SEO({ title, description, schema, image, path }) {
+export default function SEO({ title, description, schema, image, path, noindex }) {
   useEffect(() => {
     const pageTitle = title ? `${title} | CHRONYX` : DEFAULT_TITLE;
     const pageDescription = description || DEFAULT_DESCRIPTION;
     const pageImage = image || DEFAULT_IMAGE;
-    const pageUrl = path ? `${SITE_URL}${path}` : window.location.href;
+    
+    // Clean canonical URL without query parameters
+    const cleanPath = path || window.location.pathname;
+    const pageUrl = `${SITE_URL}${cleanPath}`;
 
     document.title = pageTitle;
 
@@ -48,6 +51,16 @@ export default function SEO({ title, description, schema, image, path }) {
       name: 'description',
       content: pageDescription,
     });
+
+    if (noindex) {
+      upsertMeta('meta[name="robots"]', {
+        name: 'robots',
+        content: 'noindex, follow',
+      });
+    } else {
+      let element = document.head.querySelector('meta[name="robots"]');
+      if (element) element.remove();
+    }
 
     upsertMeta('meta[property="og:title"]', {
       property: 'og:title',
@@ -89,26 +102,25 @@ export default function SEO({ title, description, schema, image, path }) {
 
     upsertLink('link[rel="canonical"]', 'canonical', pageUrl);
 
-    const existingSchema = document.getElementById('schema-markup');
-    if (existingSchema) {
-      existingSchema.remove();
-    }
+    document
+      .querySelectorAll('[id^="schema-markup-route-"]')
+      .forEach((node) => node.remove());
 
-    if (schema) {
+    const schemas = Array.isArray(schema) ? schema.filter(Boolean) : schema ? [schema] : [];
+    schemas.forEach((entry, index) => {
       const script = document.createElement('script');
-      script.id = 'schema-markup';
+      script.id = `schema-markup-route-${index}`;
       script.type = 'application/ld+json';
-      script.text = JSON.stringify(schema);
+      script.text = JSON.stringify(entry);
       document.head.appendChild(script);
-    }
+    });
 
     return () => {
-      const schemaNode = document.getElementById('schema-markup');
-      if (schemaNode) {
-        schemaNode.remove();
-      }
+      document
+        .querySelectorAll('[id^="schema-markup-route-"]')
+        .forEach((node) => node.remove());
     };
-  }, [title, description, schema, image, path]);
+  }, [title, description, schema, image, path, noindex]);
 
   return null;
 }

@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHRONYX</title>
+    <!-- Search Console Verification -->
+    <meta name="google-site-verification" content="INSERT_GOOGLE_VERIFICATION_CODE" />
+    <meta name="msvalidate.01" content="INSERT_BING_VERIFICATION_CODE" />
     <meta
       name="description"
       content="CHRONYX premium wooden wall clocks."
@@ -19,17 +22,36 @@
     <meta name="twitter:title" content="CHRONYX | Luxury Wall Clocks" />
     <meta name="twitter:description" content="Precision-crafted wooden wall clocks blending modern minimalist design with timeless materials." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?auto=format&fit=crop&q=80&w=1200&h=630" />
+    <!-- DNS Prefetch & Preconnect for CDNs -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <!-- Fonts: Preload for zero layout shift -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
+      />
+    </noscript>
     <script
       type="module"
       src="https://unpkg.com/instant.page@5.2.0/instantpage.js"
       integrity="sha384-OeDn4XE77A8V4tA8D2z7L6i6vS7lSLjeRGna43EIBgzHuLlHotE5RX7V6czS4EzF"
       crossorigin="anonymous"
+      defer
     ></script>
     <script type="module" src="/src/main.jsx"></script>
   </head>

@@ -3,7 +3,14 @@ import { Star } from '@phosphor-icons/react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 import SEO from '../components/SEO';
+import VideoPlayer from '../components/VideoPlayer';
 import { supabase } from '../lib/supabase';
+import {
+  buildBreadcrumbSchema,
+  buildProductSchema,
+  buildProductVideoAsset,
+  buildVideoObjectSchema,
+} from '../lib/structuredData';
 
 const GIFT_WRAP_PRICE = 500;
 
@@ -97,47 +104,42 @@ function ProductPage({ addToCart, products = [] }) {
     window.setTimeout(() => setNotice(''), 3000);
   };
 
-  const schema = {
-    '@context': 'https://schema.org/',
-    '@type': 'Product',
-    name: product.name,
-    image: product.gallery,
-    description: product.summary,
-    brand: {
-      '@type': 'Brand',
-      name: 'CHRONYX',
-    },
-    offers: {
-      '@type': 'Offer',
-      url: window.location.href,
-      priceCurrency: 'INR',
-      price: product.price,
-      availability:
-        product.stockQuantity > 0
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
-    },
-  };
+  const videoAsset = buildProductVideoAsset(product);
+  const schema = [
+    buildProductSchema(product, reviewStats),
+    buildBreadcrumbSchema([
+      { name: 'Home', path: '/' },
+      { name: 'Shop', path: '/shop' },
+      { name: product.name, path: `/products/${product.id}` },
+    ]),
+    buildVideoObjectSchema(videoAsset, product),
+  ].filter(Boolean);
 
   return (
     <div className="page-stack">
-      <SEO title={`${product.name} | ${product.category}`} description={product.summary} schema={schema} />
+      <SEO
+        title={`${product.name} | Luxury Wooden Wall Clock`}
+        description={product.summary}
+        schema={schema}
+        path={`/products/${product.id}`}
+        image={product.hero}
+      />
 
       {notice ? <div className="notice-pill">{notice}</div> : null}
 
       <section className="product-page-hero">
         <div className="product-gallery">
           <div className="product-main-image">
-            <img src={activeImage} alt={product.name} loading="lazy" />
+            <img src={activeImage} alt={`${product.name} - Luxury ${product.category}`} loading="eager" fetchpriority="high" />
           </div>
           <div className="product-thumbs">
-            {(product.gallery || []).map((image) => (
+            {(product.gallery || []).map((image, idx) => (
               <button
                 key={image}
                 className={image === activeImage ? 'thumb-button active' : 'thumb-button'}
                 onClick={() => setActiveImage(image)}
               >
-                <img src={image} alt={product.name} loading="lazy" />
+                <img src={image} alt={`${product.name} detail view ${idx + 1}`} loading="lazy" />
               </button>
             ))}
           </div>
@@ -272,20 +274,14 @@ function ProductPage({ addToCart, products = [] }) {
         </div>
       </section>
 
-      {product.videoEmbed ? (
+      {videoAsset ? (
         <section className="product-video-section">
           <div className="section-heading centered-heading">
             <p className="label">Craft in Motion</p>
-            <h2>See it in motion.</h2>
+            <h2>{videoAsset.title}</h2>
+            <p className="video-section-copy">{videoAsset.description}</p>
           </div>
-          <div className="video-frame">
-            <iframe
-              src={product.videoEmbed}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              title="Product Video"
-            />
-          </div>
+          <VideoPlayer productId={product.id} video={videoAsset} />
         </section>
       ) : null}
 

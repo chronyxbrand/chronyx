@@ -59,12 +59,20 @@ function BlogPage() {
       </section>
 
       {featuredArticle ? (
-        <section className="journal-hero-panel">
-          <div className="journal-hero-copy">
+        <section className="journal-hero-panel" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {featuredArticle.cover_image && (
+            <img 
+              src={featuredArticle.cover_image} 
+              alt={featuredArticle.title} 
+              style={{ width: '100%', height: '380px', objectFit: 'cover' }}
+              loading="eager"
+            />
+          )}
+          <div className="journal-hero-copy" style={{ padding: '40px', maxWidth: '100%' }}>
             <p className="label">{formatArticleDate(featuredArticle.published_at)}</p>
             <h2>{featuredArticle.title}</h2>
-            <p>{featuredArticle.excerpt}</p>
-            <Link to={`/journal/${featuredArticle.slug}`} className="primary-btn">
+            <p style={{ maxWidth: '720px' }}>{featuredArticle.excerpt}</p>
+            <Link to={`/journal/${featuredArticle.slug}`} className="primary-btn" style={{ alignSelf: 'flex-start', marginTop: '16px' }}>
               Read Featured Story <ArrowRight size={16} />
             </Link>
           </div>
@@ -86,16 +94,26 @@ function BlogPage() {
             <article
               key={article.id}
               className="story-card journal-card"
-              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 0, overflow: 'hidden' }}
             >
-              <div>
+              {article.cover_image && (
+                <Link to={`/journal/${article.slug}`}>
+                  <img 
+                    src={article.cover_image} 
+                    alt={article.title} 
+                    style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} 
+                    loading="lazy"
+                  />
+                </Link>
+              )}
+              <div style={{ padding: '24px' }}>
                 <p className="label" style={{ marginBottom: '12px' }}>
                   {formatArticleDate(article.published_at)}
                 </p>
                 <h3>{article.title}</h3>
-                <p>{article.excerpt}</p>
+                <p style={{ marginTop: '12px', color: 'var(--text-secondary)' }}>{article.excerpt}</p>
               </div>
-              <div style={{ marginTop: '24px' }}>
+              <div style={{ padding: '0 24px 24px 24px', marginTop: 'auto' }}>
                 <Link to={`/journal/${article.slug}`} className="secondary-btn" style={{ padding: '8px 12px', fontSize: '0.85rem' }}>
                   Read article <ArrowRight size={14} />
                 </Link>
