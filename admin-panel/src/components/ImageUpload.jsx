@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, ArrowRight, CrownSimple, Spinner, UploadSimple, X } from '@phosphor-icons/react';
 
 const ImageUpload = ({ images = [], onImagesChange }) => {

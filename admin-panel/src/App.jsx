@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import AdminLayout from './components/AdminLayout';
@@ -13,6 +13,7 @@ import Collections from './pages/Collections';
 import NavigationManager from './pages/NavigationManager';
 import Settings from './pages/Settings';
 import Marketing from './pages/Marketing';
+import SEOManager from './pages/SEOManager';
 import Login from './pages/Login';
 
 function App() {
@@ -74,6 +75,7 @@ function App() {
           <Route path="collections" element={<Collections />} />
           <Route path="navigation" element={<NavigationManager />} />
           <Route path="marketing" element={<Marketing />} />
+          <Route path="seo" element={<SEOManager />} />
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

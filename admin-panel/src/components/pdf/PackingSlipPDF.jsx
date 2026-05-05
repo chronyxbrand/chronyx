@@ -1,4 +1,3 @@
-import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 export const packingSlipStyles = StyleSheet.create({
@@ -165,13 +164,12 @@ function getPackingSlipData(order) {
   const displayId = `CRX-${new Date().getFullYear()}-${shortId}`;
   const address = safeOrder.shipping_address || {};
   const totalQty = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
-  const totalWeight = (totalQty * 1.1).toFixed(1);
 
-  return { safeOrder, items, dateStr, displayId, address, totalQty, totalWeight };
+  return { safeOrder, items, dateStr, displayId, address, totalQty };
 }
 
 export function PackingSlipPage({ order }) {
-  const { safeOrder, items, dateStr, displayId, address, totalQty, totalWeight } = getPackingSlipData(order);
+  const { safeOrder, items, dateStr, displayId, address, totalQty } = getPackingSlipData(order);
 
   return (
     <Page size="A4" style={packingSlipStyles.page}>
@@ -218,7 +216,6 @@ export function PackingSlipPage({ order }) {
         {items.map((item, index) => {
           const isWalnut = item.name?.toLowerCase().includes('walnut');
           const sku = `CRX-${isWalnut ? 'WN' : 'TK'}-00${index + 1}`;
-          const estWeight = isWalnut ? '1.2 kg' : '1.0 kg';
 
           return (
             <View key={`${item.name || 'item'}-${index}`} style={packingSlipStyles.tableRow}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowSquareOut, CaretLeft, DownloadSimple, Eye, FloppyDisk, Package, Palette, PlusCircle, Sparkle } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';

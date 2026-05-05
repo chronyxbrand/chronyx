@@ -1,4 +1,3 @@
-import React from 'react';
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import { buildUnitQrCodeUrl } from '../../lib/productIdentity';
 

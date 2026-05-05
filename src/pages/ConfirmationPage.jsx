@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import InvoicePDF from '../components/pdf/InvoicePDF';
 import SEO from '../components/SEO';
+import { trackPurchase } from '../lib/tracking';
 
 function ConfirmationPage() {
   const location = useLocation();
@@ -14,13 +15,17 @@ function ConfirmationPage() {
   const orderEmail = order.customer_email || 'your inbox';
 
   useEffect(() => {
+    if (order && order.id) {
+      trackPurchase(order.id, order.items || [], order.total);
+    }
+    
     const event = new CustomEvent('chronyx-notice', {
       detail: order.customer_email
         ? `Confirmation details queued for ${order.customer_email}.`
         : 'Confirmation details are ready on this page.',
     });
     window.dispatchEvent(event);
-  }, [order.customer_email]);
+  }, [order.id, order.customer_email]);
 
   return (
     <div className="page-stack">

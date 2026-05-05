@@ -3,6 +3,7 @@ import { CaretLeft } from '@phosphor-icons/react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { formatCurrency } from '../data/store';
 import { supabase } from '../lib/supabase';
+import { trackBeginCheckout } from '../lib/tracking';
 
 function CheckoutPage({ cartItems, cartTotal, shipping, setShipping, user }) {
   const navigate = useNavigate();
@@ -19,6 +20,10 @@ function CheckoutPage({ cartItems, cartTotal, shipping, setShipping, user }) {
         }
       }
     });
+
+    if (cartItems && cartItems.length > 0) {
+      trackBeginCheckout(cartItems, cartTotal);
+    }
   }, []);
 
   if (!user) {

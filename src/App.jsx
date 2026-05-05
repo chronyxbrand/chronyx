@@ -12,6 +12,7 @@ import ExitIntentPopup from './components/ExitIntentPopup';
 import BackToTop from './components/BackToTop';
 import Analytics from './components/Analytics';
 import SiteSchemas from './components/SiteSchemas';
+import PageTransitionVeil from './components/PageTransitionVeil';
 import { buildSiteContent, defaultSiteContent } from './lib/siteContent';
 
 import {
@@ -41,6 +42,7 @@ import PoliciesPage from './pages/PoliciesPage';
 import AuthPage from './pages/AuthPage';
 import CollectionPage from './pages/CollectionPage';
 import PlacementGuidePage from './pages/PlacementGuidePage';
+import LocationPage from './pages/LocationPage';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -380,6 +382,8 @@ function StoreApp() {
       />
 
       <main className="app-main" ref={mainRef}>
+        <PageTransitionVeil pathname={location.pathname} />
+        <div className="route-motion-stage" key={location.pathname}>
         {storeSettings.maintenance_mode ? (
           <section className="page-stack">
             <section className="page-header-panel">
@@ -472,9 +476,11 @@ function StoreApp() {
           <Route path="/track" element={<TrackingPage />} />
           <Route path="/policies" element={<PoliciesPage siteContent={siteContent} />} />
           <Route path="/guides/wall-clock-placement" element={<PlacementGuidePage />} />
+          <Route path="/locations/:city" element={<LocationPage products={products} />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         )}
+        </div>
       </main>
 
       <SiteFooter

@@ -6,6 +6,54 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const getBearerToken = (req: Request) => {
+  const header = req.headers.get("Authorization") || "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] || "";
+};
+
+const requireAdmin = async (req: Request, adminClient: ReturnType<typeof createClient>) => {
+  const token = getBearerToken(req);
+  if (!token) throw new Error("Authentication required");
+
+  const { data: userData, error: userError } = await adminClient.auth.getUser(token);
+  if (userError || !userData.user?.email) {
+    throw new Error("Invalid authentication token");
+  }
+
+  const { data: adminUser, error: adminError } = await adminClient
+    .from("admin_users")
+    .select("email")
+    .ilike("email", userData.user.email)
+    .maybeSingle();
+
+  if (adminError || !adminUser) {
+    throw new Error("Admin authorization required");
+  }
+
+  return userData.user;
+};
+
+const normalizeCtaUrl = (value?: string) => {
+  if (!value?.trim()) return "";
+
+  try {
+    const url = new URL(value.trim());
+    if (!["https:", "http:"].includes(url.protocol)) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+};
+
 const renderEmailHtml = ({
   subject,
   message,
@@ -21,18 +69,20 @@ const renderEmailHtml = ({
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => `<p style="margin:0 0 14px 0;color:#2c241d;line-height:1.7;">${line}</p>`)
+    .map((line) => `<p style="margin:0 0 14px 0;color:#2c241d;line-height:1.7;">${escapeHtml(line)}</p>`)
     .join("");
 
-  const cta = ctaLabel && ctaUrl
-    ? `<a href="${ctaUrl}" style="display:inline-block;margin-top:10px;padding:12px 18px;border-radius:999px;background:#1a1511;color:#f5eee6;text-decoration:none;font-weight:600;">${ctaLabel}</a>`
+  const safeCtaUrl = normalizeCtaUrl(ctaUrl);
+  const cta = ctaLabel && safeCtaUrl
+    ? `<a href="${escapeHtml(safeCtaUrl)}" style="display:inline-block;margin-top:10px;padding:12px 18px;border-radius:999px;background:#1a1511;color:#f5eee6;text-decoration:none;font-weight:600;">${escapeHtml(ctaLabel)}</a>`
     : "";
+  const safeSubject = escapeHtml(subject);
 
   return `
     <div style="background:#f6f0e8;padding:32px 16px;font-family:Arial,sans-serif;">
       <div style="max-width:620px;margin:0 auto;background:#fffaf4;border:1px solid #eadfce;border-radius:20px;padding:32px;">
         <p style="margin:0 0 10px 0;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#9b7a54;">CHRONYX</p>
-        <h1 style="margin:0 0 18px 0;font-size:28px;line-height:1.2;color:#171310;">${subject}</h1>
+        <h1 style="margin:0 0 18px 0;font-size:28px;line-height:1.2;color:#171310;">${safeSubject}</h1>
         ${paragraphs}
         ${cta}
       </div>
@@ -62,6 +112,7 @@ serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    await requireAdmin(req, adminClient);
 
     const { data: subscribers, error: subscribersError } = await adminClient
       .from("subscribers")

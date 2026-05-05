@@ -86,7 +86,13 @@ function buildMainSitemap(products, blogPosts, collections) {
     { path: '/contact', priority: '0.5', changefreq: 'monthly' },
     { path: '/policies', priority: '0.3', changefreq: 'yearly' },
     { path: '/guides/wall-clock-placement', priority: '0.6', changefreq: 'yearly' },
-    { path: '/blog', priority: '0.7', changefreq: 'weekly' }
+    { path: '/blog', priority: '0.7', changefreq: 'weekly' },
+    { path: '/locations/mumbai', priority: '0.5', changefreq: 'monthly' },
+    { path: '/locations/delhi', priority: '0.5', changefreq: 'monthly' },
+    { path: '/locations/bangalore', priority: '0.5', changefreq: 'monthly' },
+    { path: '/locations/hyderabad', priority: '0.5', changefreq: 'monthly' },
+    { path: '/locations/pune', priority: '0.5', changefreq: 'monthly' },
+    { path: '/locations/chennai', priority: '0.5', changefreq: 'monthly' },
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;

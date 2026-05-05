@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FloppyDisk, Spinner, UploadSimple } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';
 

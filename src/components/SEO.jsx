@@ -1,4 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+let cachedOverrides = null;
 
 const DEFAULT_TITLE = 'CHRONYX | Luxury Wooden Wall Clocks';
 const DEFAULT_DESCRIPTION =
@@ -36,10 +39,26 @@ const upsertLink = (selector, rel, href) => {
 };
 
 export default function SEO({ title, description, schema, image, path, noindex }) {
+  const [dbOverride, setDbOverride] = useState(null);
+  const cleanPath = path || window.location.pathname;
+
   useEffect(() => {
-    const pageTitle = title ? `${title} | CHRONYX` : DEFAULT_TITLE;
-    const pageDescription = description || DEFAULT_DESCRIPTION;
-    const pageImage = image || DEFAULT_IMAGE;
+    if (cachedOverrides) {
+      setDbOverride(cachedOverrides.find(o => o.path === cleanPath));
+    } else {
+      supabase.from('seo_overrides').select('*').then(({ data }) => {
+        if (data && !data.error) {
+          cachedOverrides = data;
+          setDbOverride(data.find(o => o.path === cleanPath));
+        }
+      });
+    }
+  }, [cleanPath]);
+
+  useEffect(() => {
+    const pageTitle = dbOverride?.title || (title ? `${title} | CHRONYX` : DEFAULT_TITLE);
+    const pageDescription = dbOverride?.description || description || DEFAULT_DESCRIPTION;
+    const pageImage = dbOverride?.image || image || DEFAULT_IMAGE;
     
     // Clean canonical URL without query parameters
     const cleanPath = path || window.location.pathname;
@@ -120,7 +139,7 @@ export default function SEO({ title, description, schema, image, path, noindex }
         .querySelectorAll('[id^="schema-markup-route-"]')
         .forEach((node) => node.remove());
     };
-  }, [title, description, schema, image, path, noindex]);
+  }, [title, description, schema, image, path, noindex, dbOverride]);
 
   return null;
 }

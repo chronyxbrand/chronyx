@@ -37,6 +37,11 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
 
   const shippingFee = shippingMethod === 'express' ? (storeSettings?.express_shipping_fee || 1500) : 0;
   const codFee = storeSettings?.cod_fee || 100;
+  const buildServerCartItems = () =>
+    cartItems.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+    }));
 
   const applyCoupon = async (e) => {
     e.preventDefault();
@@ -127,7 +132,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
     }
   };
 
-  const processOrder = async (paymentDetails = null) => {
+  const processCodOrder = async () => {
     try {
       const orderData = {
         customer_email: shipping.email || 'guest@chronyx.in',
@@ -148,8 +153,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
           pincode: shipping.pincode,
           phone: shipping.phone || '',
         },
-        payment_method: payment.method,
-        ...(paymentDetails && { razorpay_payment_id: paymentDetails.razorpay_payment_id })
+        payment_method: 'COD',
       };
 
       const { data: insertedOrder, error } = await supabase.from('orders').insert([orderData]).select().single();
@@ -186,7 +190,7 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
     e.preventDefault();
     
     if (payment.method === 'COD') {
-      await processOrder();
+      await processCodOrder();
     } else {
       const res = await loadRazorpay();
       
@@ -199,11 +203,19 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
 
       try {
         const { data: orderData, error } = await supabase.functions.invoke('create-razorpay-order', {
-          body: { amount: Math.round(finalTotal * 100) }
+          body: {
+            cartItems: buildServerCartItems(),
+            shippingMethod,
+            coupon: coupon.trim() || null,
+          }
         });
 
         if (error || !orderData || !orderData.id) {
-          throw new Error('Could not create secure order. Check Razorpay keys in Supabase.');
+          throw new Error(orderData?.error || 'Could not create secure order. Check Razorpay keys in Supabase.');
+        }
+
+        if (typeof orderData.discount === 'number') {
+          setDiscount(orderData.discount);
         }
 
         const rzpMethod = payment.method === 'Card' ? 'card' : 
@@ -217,8 +229,34 @@ function PaymentPage({ cartItems, cartTotal, shipping, payment, setPayment, clea
           name: 'Chronyx',
           description: 'Luxury Timepieces',
           order_id: orderData.id,
-          handler: function (response) {
-            processOrder(response);
+          handler: async function (response) {
+            setNotice('Verifying payment...');
+            const { data: verificationData, error: verificationError } = await supabase.functions.invoke(
+              'verify-razorpay-payment',
+              {
+                body: {
+                  ...response,
+                  cartItems: buildServerCartItems(),
+                  shipping,
+                  shippingMethod,
+                  coupon: coupon.trim() || null,
+                  paymentMethod: payment.method,
+                },
+              },
+            );
+
+            if (verificationError || !verificationData?.order) {
+              console.error('Razorpay verification failed:', verificationError || verificationData);
+              setNotice('Payment verification failed. Please contact support if money was debited.');
+              return;
+            }
+
+            if (refreshProducts) {
+              refreshProducts();
+            }
+
+            clearCart();
+            navigate('/confirmation', { state: { order: verificationData.order } });
           },
           prefill: {
             name: shipping.name,

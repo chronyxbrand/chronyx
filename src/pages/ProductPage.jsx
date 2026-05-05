@@ -11,6 +11,7 @@ import {
   buildProductVideoAsset,
   buildVideoObjectSchema,
 } from '../lib/structuredData';
+import { trackViewItem, trackAddToCart } from '../lib/tracking';
 
 const GIFT_WRAP_PRICE = 500;
 
@@ -30,6 +31,7 @@ function ProductPage({ addToCart, products = [] }) {
     if (!product) return;
     setActiveImage(product.gallery?.[0] || '');
     setGiftWrap(false);
+    trackViewItem(product);
     
     // Fetch dynamic reviews
     const fetchReviews = async () => {
@@ -100,6 +102,7 @@ function ProductPage({ addToCart, products = [] }) {
   const relatedProducts = products.filter((entry) => entry.id !== product.id).slice(0, 3);
   const handleAddToCart = () => {
     addToCart(product.id);
+    trackAddToCart(product, 1);
     setNotice(`${product.name}${giftWrap ? ' (Gift Wrapped)' : ''} added to cart.`);
     window.setTimeout(() => setNotice(''), 3000);
   };

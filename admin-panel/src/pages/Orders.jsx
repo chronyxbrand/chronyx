@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CaretDown, DownloadSimple, Lightning, MagnifyingGlass, Printer, StackSimple } from '@phosphor-icons/react';
 import { pdf } from '@react-pdf/renderer';
 import { supabase } from '../lib/supabase';

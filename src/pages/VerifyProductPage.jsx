@@ -22,15 +22,15 @@ function VerifyProductPage({ products = [] }) {
 
       try {
         const { data, error } = await supabase
-          .from('product_auth_units')
-          .select('*')
-          .eq('public_unit_id', unitId)
-          .maybeSingle();
+          .rpc('verify_product_auth_unit', {
+            lookup_public_unit_id: unitId,
+            lookup_authenticity_code: queryCode,
+          });
 
         if (error) throw error;
 
         if (!cancelled) {
-          setUnit(data || null);
+          setUnit(data?.[0] || null);
         }
       } catch (error) {
         if (!cancelled) {
@@ -54,20 +54,15 @@ function VerifyProductPage({ products = [] }) {
     return () => {
       cancelled = true;
     };
-  }, [unitId]);
+  }, [queryCode, unitId]);
 
   const product = useMemo(() => {
     if (!unit?.product_id) return null;
     return products.find((entry) => entry.id === unit.product_id) || null;
   }, [products, unit]);
 
-  const verified = Boolean(
-    unit
-      && queryCode
-      && queryCode === unit.authenticity_code
-      && unit.status !== 'archived',
-  );
-  const qrCodeUrl = unit ? buildUnitQrCodeUrl(unit) : '';
+  const verified = Boolean(unit?.verified);
+  const qrCodeUrl = unit ? buildUnitQrCodeUrl({ ...unit, authenticity_code: queryCode }) : '';
 
   if (loading) {
     return (
@@ -135,7 +130,7 @@ function VerifyProductPage({ products = [] }) {
             </div>
             <div className="product-auth-item">
               <small>Authenticity Code</small>
-              <strong>{unit.authenticity_code}</strong>
+              <strong>{queryCode ? 'Checked privately' : 'Missing code'}</strong>
             </div>
             <div className="product-auth-item">
               <small>Status</small>

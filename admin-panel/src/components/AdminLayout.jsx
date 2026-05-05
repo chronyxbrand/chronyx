@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { SquaresFour, Package, ShoppingCart, Browsers, Megaphone, Gear, SignOut, ChatCircleDots, Newspaper, Stack, Rows } from '@phosphor-icons/react';
@@ -37,6 +36,9 @@ const AdminLayout = () => {
           </NavLink>
           <NavLink to="/marketing" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <Megaphone size={20} /> Marketing
+          </NavLink>
+          <NavLink to="/seo" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <Browsers size={20} /> SEO Overrides
           </NavLink>
           <NavLink to="/settings" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <Gear size={20} /> Settings

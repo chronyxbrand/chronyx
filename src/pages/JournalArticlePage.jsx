@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../data/store';
 import { fallbackArticles, findFallbackArticle, formatArticleDate } from '../lib/journal';
 import { buildArticleSchema } from '../lib/structuredData';
+import { sanitizeArticleHtml } from '../lib/sanitizeHtml';
 
 function JournalArticlePage({ products = [] }) {
   const { slug } = useParams();
@@ -55,6 +56,7 @@ function JournalArticlePage({ products = [] }) {
   // Get up to 3 featured products
   const featuredProducts = products.filter((p) => p.is_featured_home || p.stockQuantity > 0).slice(0, 3);
   const schema = buildArticleSchema(article);
+  const sanitizedArticleContent = useMemo(() => sanitizeArticleHtml(article.content || ''), [article.content]);
 
   return (
     <div className="page-stack" style={{ paddingTop: 0 }}>
@@ -135,7 +137,7 @@ function JournalArticlePage({ products = [] }) {
 
       <div className="journal-article-body" style={{ marginTop: '64px', marginBottom: '80px', padding: '0 24px' }}>
         {/* Render article as raw HTML for SEO subheadings and inline links */}
-        <div dangerouslySetInnerHTML={{ __html: article.content }} />
+        <div dangerouslySetInnerHTML={{ __html: sanitizedArticleContent }} />
       </div>
 
       {/* Embedded Commerce: Drive informational traffic to products */}

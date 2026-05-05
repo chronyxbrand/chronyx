@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NotePencil, Plus, Trash } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const defaultPostForm = {
   id: '',
@@ -215,9 +217,14 @@ const Journal = () => {
               <textarea rows={3} name="excerpt" value={formData.excerpt} onChange={handleChange} />
             </div>
 
-            <div>
+            <div className="quill-container">
               <label className="settings-label">Article Body</label>
-              <textarea rows={10} name="content" value={formData.content} onChange={handleChange} />
+              <ReactQuill 
+                theme="snow" 
+                value={formData.content} 
+                onChange={(value) => setFormData(prev => ({ ...prev, content: value }))} 
+                style={{ height: '300px', marginBottom: '50px', background: 'white', color: 'black' }}
+              />
             </div>
 
             <div>
