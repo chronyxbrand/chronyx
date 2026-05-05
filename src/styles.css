@@ -4983,6 +4983,10 @@ select:focus {
     border-radius: 20px;
   }
 
+  .auth-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
   .whatsapp-widget {
     right: 16px;
     left: auto;

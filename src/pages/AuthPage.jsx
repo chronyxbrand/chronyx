@@ -1,14 +1,50 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { ArrowRight } from '@phosphor-icons/react';
 import { Navigate } from 'react-router-dom';
+import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
+import { supabase } from '../lib/supabase';
 
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://chronyx.in';
 
+const inputStyle = {
+  width: '100%',
+  padding: '12px',
+  background: 'var(--surface)',
+  border: '1px solid var(--line)',
+  color: 'var(--text)',
+  borderRadius: '8px',
+};
+
+const labelStyle = {
+  display: 'block',
+  marginBottom: '8px',
+  color: 'var(--text-secondary)',
+};
+
+const passwordToggleStyle = {
+  position: 'absolute',
+  top: '50%',
+  right: '10px',
+  transform: 'translateY(-50%)',
+  width: '32px',
+  height: '32px',
+  display: 'grid',
+  placeItems: 'center',
+  border: 'none',
+  background: 'transparent',
+  color: 'var(--text-secondary)',
+  cursor: 'pointer',
+};
+
 function AuthPage({ user }) {
   const [isLogin, setIsLogin] = useState(true);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [age, setAge] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -19,8 +55,15 @@ function AuthPage({ user }) {
     return <Navigate to={returnTo} replace />;
   }
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
+  const resetPasswordFields = () => {
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleAuth = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setMessage({ text: '', type: '' });
 
@@ -28,20 +71,43 @@ function AuthPage({ user }) {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // Successful login will trigger the auth state listener in App.jsx
       } else {
+        const cleanedName = fullName.trim();
+        const cleanedPhone = phone.replace(/\D/g, '');
+        const numericAge = Number(age);
+
+        if (!cleanedName) throw new Error('Full name is required.');
+        if (cleanedPhone.length < 10) throw new Error('Enter a valid phone number.');
+        if (!Number.isInteger(numericAge) || numericAge < 13) {
+          throw new Error('You must be at least 13 years old to create an account.');
+        }
+        if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+        if (password !== confirmPassword) throw new Error('Passwords do not match.');
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${SITE_URL}/auth`,
+            data: {
+              full_name: cleanedName,
+              phone: cleanedPhone,
+              age: numericAge,
+            },
           },
         });
         if (error) throw error;
-        
-        // Auto-subscribe new users to newsletter
-        await supabase.from('subscribers').insert([{ email, source: 'signup' }]);
-        
+
+        await Promise.allSettled([
+          supabase.from('customers').insert([{
+            name: cleanedName,
+            email,
+            phone: cleanedPhone,
+            is_newsletter_subscribed: true,
+          }]),
+          supabase.from('subscribers').insert([{ email, source: 'signup' }]),
+        ]);
+
         setMessage({ text: 'Check your email for the confirmation link!', type: 'success' });
       }
     } catch (error) {
@@ -53,7 +119,7 @@ function AuthPage({ user }) {
 
   return (
     <div className="page-stack" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
-      <div style={{ maxWidth: '400px', width: '100%', padding: '40px', background: 'var(--surface-2)', borderRadius: '24px', border: '1px solid var(--line)' }}>
+      <div style={{ maxWidth: '460px', width: '100%', padding: '40px', background: 'var(--surface-2)', borderRadius: '24px', border: '1px solid var(--line)' }}>
         <h1 style={{ textAlign: 'center', marginBottom: '8px', fontSize: '2rem' }}>
           {isLogin ? 'Welcome Back' : 'Create Account'}
         </h1>
@@ -68,32 +134,125 @@ function AuthPage({ user }) {
         )}
 
         <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {!isLogin && (
+            <>
+              <div>
+                <label htmlFor="signupFullName" style={labelStyle}>Full Name</label>
+                <input
+                  id="signupFullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  required
+                  autoComplete="name"
+                  placeholder="Your full name"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div className="auth-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 110px', gap: '12px' }}>
+                <div>
+                  <label htmlFor="signupPhone" style={labelStyle}>Phone Number</label>
+                  <input
+                    id="signupPhone"
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    required
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder="9876543210"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="signupAge" style={labelStyle}>Age</label>
+                  <input
+                    id="signupAge"
+                    type="number"
+                    value={age}
+                    onChange={(event) => setAge(event.target.value)}
+                    required
+                    min="13"
+                    max="120"
+                    inputMode="numeric"
+                    placeholder="18"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Email Address</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)}
+            <label htmlFor="authEmail" style={labelStyle}>Email Address</label>
+            <input
+              id="authEmail"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
+              autoComplete="email"
               placeholder="name@example.com"
-              style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text)', borderRadius: '8px' }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text)', borderRadius: '8px' }}
+              style={inputStyle}
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="primary-btn" 
+          <div>
+            <label htmlFor="authPassword" style={labelStyle}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                id="authPassword"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={isLogin ? undefined : 8}
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                placeholder={isLogin ? 'Enter your password' : 'Minimum 8 characters'}
+                style={{ ...inputStyle, paddingRight: '46px' }}
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword((current) => !current)}
+                style={passwordToggleStyle}
+              >
+                {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {!isLogin && (
+            <div>
+              <label htmlFor="signupConfirmPassword" style={labelStyle}>Confirm Password</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="signupConfirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                  minLength="8"
+                  autoComplete="new-password"
+                  placeholder="Re-enter password"
+                  style={{ ...inputStyle, paddingRight: '46px' }}
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? 'Hide repeated password' : 'Show repeated password'}
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                  style={passwordToggleStyle}
+                >
+                  {showConfirmPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="primary-btn"
             disabled={loading}
             style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center', padding: '14px' }}
           >
@@ -102,8 +261,12 @@ function AuthPage({ user }) {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
-          <button 
-            onClick={() => { setIsLogin(!isLogin); setMessage({ text: '', type: '' }); }}
+          <button
+            onClick={() => {
+              setIsLogin((current) => !current);
+              setMessage({ text: '', type: '' });
+              resetPasswordFields();
+            }}
             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.9rem' }}
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
