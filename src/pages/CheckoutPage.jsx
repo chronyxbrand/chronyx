@@ -142,24 +142,24 @@ function CheckoutPage({ cartItems, cartTotal, shipping, setShipping, user }) {
           <div className="section-heading" style={{ marginTop: '24px' }}>
             <h2>Shipping Method</h2>
           </div>
-          <div className="shipping-options" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid var(--line)', borderRadius: '12px', cursor: 'pointer', background: shippingMethod === 'standard' ? 'var(--surface-3)' : 'transparent' }}>
-              <input type="radio" name="shippingMethod" value="standard" checked={shippingMethod === 'standard'} onChange={() => setShippingMethod('standard')} />
-              <div style={{ flex: 1 }}>
-                <strong>Standard Shipping</strong>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>5-7 Business Days</p>
+          <div className="shipping-options" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px', padding: '20px', border: shippingMethod === 'standard' ? '2px solid var(--accent)' : '1px solid var(--line)', borderRadius: '12px', cursor: 'pointer', background: shippingMethod === 'standard' ? 'var(--surface-2)' : 'transparent', transition: 'all 0.2s ease' }}>
+              <input type="radio" name="shippingMethod" value="standard" checked={shippingMethod === 'standard'} onChange={() => setShippingMethod('standard')} style={{ margin: 0, width: '20px', height: '20px', accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }} />
+              <div style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <strong style={{ fontSize: '1.05rem', color: 'var(--text)', display: 'block' }}>Standard Shipping</strong>
+                <span style={{ margin: 0, fontSize: '0.9rem', color: 'var(--muted)', display: 'block' }}>5-7 Business Days</span>
               </div>
-              <strong>Free</strong>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>Free</strong>
             </label>
             
             {storeSettings?.express_shipping_enabled && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: '1px solid var(--line)', borderRadius: '12px', cursor: 'pointer', background: shippingMethod === 'express' ? 'var(--surface-3)' : 'transparent' }}>
-                <input type="radio" name="shippingMethod" value="express" checked={shippingMethod === 'express'} onChange={() => setShippingMethod('express')} />
-                <div style={{ flex: 1 }}>
-                  <strong>Express White-Glove</strong>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>1-2 Business Days</p>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px', padding: '20px', border: shippingMethod === 'express' ? '2px solid var(--accent)' : '1px solid var(--line)', borderRadius: '12px', cursor: 'pointer', background: shippingMethod === 'express' ? 'var(--surface-2)' : 'transparent', transition: 'all 0.2s ease' }}>
+                <input type="radio" name="shippingMethod" value="express" checked={shippingMethod === 'express'} onChange={() => setShippingMethod('express')} style={{ margin: 0, width: '20px', height: '20px', accentColor: 'var(--accent)', cursor: 'pointer', flexShrink: 0 }} />
+                <div style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <strong style={{ fontSize: '1.05rem', color: 'var(--text)', display: 'block' }}>Express White-Glove</strong>
+                  <span style={{ margin: 0, fontSize: '0.9rem', color: 'var(--muted)', display: 'block' }}>1-2 Business Days</span>
                 </div>
-                <strong>{formatCurrency(storeSettings?.express_shipping_fee || 1500)}</strong>
+                <strong style={{ fontSize: '1.05rem', color: 'var(--text)', whiteSpace: 'nowrap' }}>{formatCurrency(storeSettings?.express_shipping_fee || 1500)}</strong>
               </label>
             )}
           </div>
