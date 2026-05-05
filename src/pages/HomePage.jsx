@@ -143,7 +143,7 @@ function HomePage({ products = [], siteContent }) {
               <p>
                 A statement piece engineered for modern spaces.
               </p>
-              <Link className="text-link" to={`/products/${heroProduct.id}`}>
+              <Link className="text-link" to={`/products/${heroProduct.id}`} aria-label={`Learn more about ${heroProduct.name}`}>
                 Learn More <ArrowRight size={16} />
               </Link>
             </div>
@@ -166,7 +166,7 @@ function HomePage({ products = [], siteContent }) {
               <p>
                 Crafted from premium materials with precision detailing.
               </p>
-              <Link className="text-link" to={`/products/${featureProduct.id}`}>
+              <Link className="text-link" to={`/products/${featureProduct.id}`} aria-label={`View details of ${featureProduct.name}`}>
                 View Details <ArrowRight size={16} />
               </Link>
             </div>
