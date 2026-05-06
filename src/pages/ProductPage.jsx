@@ -56,14 +56,25 @@ function ProductPage({ addToCart, products = [] }) {
     fetchReviews();
   }, [product]);
 
-  const reviewStats = useMemo(() => {
-    if (productReviews.length === 0) return { avg: 5.0, count: 0 };
-    const sum = productReviews.reduce((acc, rev) => acc + rev.rating, 0);
-    return {
-      avg: (sum / productReviews.length).toFixed(1),
-      count: productReviews.length
-    };
+  const visibleReviews = useMemo(() => {
+    const byCustomer = new Map();
+    productReviews.forEach((review) => {
+      const key = `${review.product_id}:${String(review.customer_email || review.customer_name || review.id).toLowerCase()}`;
+      if (!byCustomer.has(key)) {
+        byCustomer.set(key, review);
+      }
+    });
+    return Array.from(byCustomer.values());
   }, [productReviews]);
+
+  const reviewStats = useMemo(() => {
+    if (visibleReviews.length === 0) return { avg: 5.0, count: 0 };
+    const sum = visibleReviews.reduce((acc, rev) => acc + rev.rating, 0);
+    return {
+      avg: (sum / visibleReviews.length).toFixed(1),
+      count: visibleReviews.length
+    };
+  }, [visibleReviews]);
 
   useEffect(() => {
     if (!product?.dropDate) return undefined;
@@ -310,13 +321,13 @@ function ProductPage({ addToCart, products = [] }) {
         
         {loadingReviews ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>Loading reviews...</div>
-        ) : productReviews.length === 0 ? (
+        ) : visibleReviews.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)', background: 'var(--surface-2)', borderRadius: '24px' }}>
             <p style={{ margin: 0 }}>This timepiece doesn't have any reviews yet. Verified purchasers can leave a review from their account.</p>
           </div>
         ) : (
           <div className="review-grid">
-            {productReviews.map((review) => (
+            {visibleReviews.map((review) => (
               <article key={review.id} className="review-card">
                 <div className="review-card-stars">
                   {Array.from({ length: 5 }).map((_, index) => (

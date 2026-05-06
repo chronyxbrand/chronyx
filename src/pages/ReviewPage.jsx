@@ -13,8 +13,11 @@ function ReviewPage({ user }) {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [existingReviewId, setExistingReviewId] = useState('');
+  const [loadingExistingReview, setLoadingExistingReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [wasUpdate, setWasUpdate] = useState(false);
 
   useEffect(() => {
     if (!user) return; // Will be redirected
@@ -60,6 +63,48 @@ function ReviewPage({ user }) {
 
     fetchOrder();
   }, [orderId, user]);
+
+  useEffect(() => {
+    if (!user || !selectedProduct?.id) {
+      setExistingReviewId('');
+      setRating(5);
+      setComment('');
+      return;
+    }
+
+    const fetchExistingReview = async () => {
+      setLoadingExistingReview(true);
+      try {
+        const { data, error } = await supabase
+          .from('product_reviews')
+          .select('id, rating, comment')
+          .eq('product_id', selectedProduct.id)
+          .eq('customer_email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setExistingReviewId(data.id);
+          setRating(data.rating || 5);
+          setComment(data.comment || '');
+        } else {
+          setExistingReviewId('');
+          setRating(5);
+          setComment('');
+        }
+      } catch (err) {
+        console.error('Error loading existing review:', err);
+        setExistingReviewId('');
+      } finally {
+        setLoadingExistingReview(false);
+      }
+    };
+
+    fetchExistingReview();
+  }, [selectedProduct?.id, user]);
 
   if (!user) {
     return <Navigate to={`/auth?returnTo=/review/${orderId}`} replace />;
@@ -117,12 +162,19 @@ function ReviewPage({ user }) {
         status: 'approved'
       };
 
-      const { error: insertError } = await supabase
-        .from('product_reviews')
-        .insert([payload]);
+      const { error: saveError } = existingReviewId
+        ? await supabase
+            .from('product_reviews')
+            .update(payload)
+            .eq('id', existingReviewId)
+            .eq('customer_email', user.email)
+        : await supabase
+            .from('product_reviews')
+            .insert([payload]);
 
-      if (insertError) throw insertError;
+      if (saveError) throw saveError;
 
+      setWasUpdate(Boolean(existingReviewId));
       setSuccess(true);
     } catch (err) {
       console.error('Error submitting review:', err);
@@ -137,9 +189,9 @@ function ReviewPage({ user }) {
       <div className="page-stack" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '70vh' }}>
         <div style={{ maxWidth: '500px', width: '100%', textAlign: 'center', padding: '48px 32px', background: 'var(--surface-2)', borderRadius: '24px' }}>
           <Star size={48} weight="fill" color="var(--accent)" style={{ marginBottom: '24px' }} />
-          <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>Thank You!</h2>
+          <h2 style={{ fontSize: '2rem', marginBottom: '16px' }}>{wasUpdate ? 'Review Updated' : 'Thank You!'}</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
-            Your review for the {selectedProduct?.name} has been published successfully. We appreciate your feedback.
+            Your review for the {selectedProduct?.name} has been {wasUpdate ? 'updated' : 'published'} successfully. We appreciate your feedback.
           </p>
           <Link to={`/products/${selectedProduct?.id}`} className="primary-btn" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             View Product Page
@@ -210,6 +262,16 @@ function ReviewPage({ user }) {
                   </button>
                 </div>
               )}
+
+              {loadingExistingReview ? (
+                <p style={{ margin: 0, textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  Checking for your existing review...
+                </p>
+              ) : existingReviewId ? (
+                <p style={{ margin: 0, textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  You already reviewed this piece. Editing here will update your existing review.
+                </p>
+              ) : null}
               
               <div>
                 <label className="label" style={{ marginBottom: '16px', display: 'block', textAlign: 'center' }}>Overall Rating</label>
@@ -257,8 +319,8 @@ function ReviewPage({ user }) {
                 />
               </div>
 
-              <button type="submit" className="primary-btn" disabled={submitting} style={{ width: '100%', padding: '18px', display: 'flex', justifyContent: 'center', fontSize: '1.05rem' }}>
-                {submitting ? 'Publishing Review...' : 'Publish Review'}
+              <button type="submit" className="primary-btn" disabled={submitting || loadingExistingReview} style={{ width: '100%', padding: '18px', display: 'flex', justifyContent: 'center', fontSize: '1.05rem' }}>
+                {submitting ? 'Saving Review...' : existingReviewId ? 'Update Review' : 'Publish Review'}
               </button>
             </>
           )}
