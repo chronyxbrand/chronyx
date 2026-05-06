@@ -28,6 +28,14 @@ const defaultSocialImages = [
   'https://images.unsplash.com/photo-1595526114101-10ce6b82504b?auto=format&fit=crop&q=80&w=600',
 ];
 
+const PRECISION_MILLING_IMAGE =
+  'https://images.unsplash.com/photo-1694532476388-afaab4a379f3?ixlib=rb-4.1.0&auto=format&fit=crop&q=80&w=1000';
+
+const replacedImageUrls = new Set([
+  'https://images.unsplash.com/photo-1598425237654-4c05ab483b45?auto=format&fit=crop&q=80&w=800',
+  'https://unsplash.com/photos/macro-shot-of-cnc-engraving-machine-cutting-wood-in-automated-production-workshop-with-sawdust-flakes-in-air-copy-space-3yDtj6j6wes',
+]);
+
 const defaultAboutMakingOf = [
   {
     img: 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?auto=format&fit=crop&q=80&w=800',
@@ -35,7 +43,7 @@ const defaultAboutMakingOf = [
     text: 'We work directly with sustainable lumber mills to select cuts with the most striking, unique grain patterns.',
   },
   {
-    img: 'https://images.unsplash.com/photo-1598425237654-4c05ab483b45?auto=format&fit=crop&q=80&w=800',
+    img: PRECISION_MILLING_IMAGE,
     title: 'Precision Milling',
     text: 'Each clock body is CNC milled to within a fraction of a millimeter to perfectly house our silent movement hardware.',
   },
@@ -194,10 +202,28 @@ const mergeDeep = (base, incoming) => {
   return output;
 };
 
+const normalizeContentImages = (value) => {
+  if (typeof value === 'string') {
+    return replacedImageUrls.has(value) ? PRECISION_MILLING_IMAGE : value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeContentImages);
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, normalizeContentImages(entry)]),
+    );
+  }
+
+  return value;
+};
+
 export function buildSiteContent(settingsRows = []) {
   const byKey = Object.fromEntries((settingsRows || []).map((row) => [row.key, row.value]));
 
-  return {
+  return normalizeContentImages({
     heroText: mergeDeep(defaultSiteContent.heroText, byKey.hero_text),
     homepageContent: mergeDeep(defaultSiteContent.homepageContent, byKey.homepage_content),
     aboutPageContent: mergeDeep(defaultSiteContent.aboutPageContent, byKey.about_page_content),
@@ -205,5 +231,5 @@ export function buildSiteContent(settingsRows = []) {
     policyContent: mergeDeep(defaultSiteContent.policyContent, byKey.store_policies),
     navContent: mergeDeep(defaultSiteContent.navContent, byKey.navigation_content),
     footerContent: mergeDeep(defaultSiteContent.footerContent, byKey.footer_content),
-  };
+  });
 }
