@@ -207,7 +207,7 @@ function ShopPage({ addToCart, setNotice, toggleWishlist, wishlist, products = [
                           setNotice(`${product.name} added to cart.`);
                         }}
                       >
-                        Add
+                        Add to Cart
                       </button>
                     </div>
                   </div>

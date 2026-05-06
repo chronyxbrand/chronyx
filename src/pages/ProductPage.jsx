@@ -107,6 +107,12 @@ function ProductPage({ addToCart, products = [] }) {
     window.setTimeout(() => setNotice(''), 3000);
   };
 
+  const handleBuyNow = () => {
+    addToCart(product.id);
+    trackAddToCart(product, 1);
+    navigate('/cart');
+  };
+
   const videoAsset = buildProductVideoAsset(product);
   const schema = [
     buildProductSchema(product, reviewStats),
@@ -234,7 +240,7 @@ function ProductPage({ addToCart, products = [] }) {
               <button className="primary-btn" onClick={handleAddToCart}>
                 Add to Cart
               </button>
-              <button className="secondary-btn" onClick={() => navigate('/checkout')}>
+              <button className="secondary-btn" onClick={handleBuyNow}>
                 Buy Now
               </button>
             </div>
