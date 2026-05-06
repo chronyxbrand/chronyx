@@ -289,6 +289,60 @@ function StoreApp() {
   }, [location.pathname]);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+
+    const revealSelectors = [
+      '.page-header-panel',
+      '.catalog-section',
+      '.summary-panel',
+      '.product-page-hero',
+      '.checkout-layout',
+      '.home-v2-feature',
+      '.home-v2-values',
+      '.home-v2-statement',
+      '.home-v2-shop-preview',
+      '.home-v2-process',
+      '.home-v2-social-proof',
+      '.home-v2-final-cta',
+      '.product-card',
+      '.testimonial-quote-card',
+      '.collection-discovery-card',
+      '.info-block',
+      '.review-card',
+    ].join(',');
+
+    let observer;
+    const setupId = window.setTimeout(() => {
+      const elements = Array.from(document.querySelectorAll(revealSelectors));
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.08 },
+      );
+
+      elements.forEach((element, index) => {
+        element.classList.add('scroll-reveal');
+        element.style.setProperty('--reveal-delay', `${Math.min(index % 6, 5) * 42}ms`);
+        observer.observe(element);
+      });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(setupId);
+      if (observer) observer.disconnect();
+      document.querySelectorAll('.scroll-reveal').forEach((element) => {
+        element.classList.remove('scroll-reveal', 'is-visible');
+        element.style.removeProperty('--reveal-delay');
+      });
+    };
+  }, [location.pathname, loadingProducts]);
+
+  useEffect(() => {
     if (!notice) return undefined;
 
     const timer = window.setTimeout(() => {

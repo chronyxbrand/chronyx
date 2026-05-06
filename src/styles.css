@@ -236,6 +236,45 @@ button {
   will-change: opacity, transform;
 }
 
+.scroll-reveal {
+  opacity: 0.001;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity 560ms ease,
+    transform 720ms cubic-bezier(0.19, 1, 0.22, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.scroll-reveal .feature-media img,
+.scroll-reveal .home-v2-product-image img,
+.scroll-reveal .product-image-link img,
+.scroll-reveal .process-image img {
+  transform: scale(1.025);
+  transition:
+    transform 900ms cubic-bezier(0.19, 1, 0.22, 1),
+    filter 900ms ease;
+}
+
+.scroll-reveal.is-visible .feature-media img,
+.scroll-reveal.is-visible .home-v2-product-image img,
+.scroll-reveal.is-visible .product-image-link img,
+.scroll-reveal.is-visible .process-image img {
+  transform: scale(1);
+}
+
+.scroll-reveal.is-visible .hover-zoom:hover img {
+  transform: scale(1.035);
+}
+
+.scroll-reveal.is-visible.home-v2-product-card:hover .home-v2-product-image img {
+  transform: scale(1.02);
+}
+
 section {
   border: 1px solid var(--line);
   border-radius: 34px;
@@ -4844,6 +4883,20 @@ select:focus {
 @media (prefers-reduced-motion: reduce) {
   .route-motion-stage {
     animation: none;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .scroll-reveal .feature-media img,
+  .scroll-reveal .home-v2-product-image img,
+  .scroll-reveal .product-image-link img,
+  .scroll-reveal .process-image img {
+    transform: none;
+    transition: none;
   }
 }
 
