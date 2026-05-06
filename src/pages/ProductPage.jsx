@@ -348,7 +348,7 @@ function ProductPage({ addToCart, products = [] }) {
                       <strong>{formatCurrency(related.price)}</strong>
                     </div>
                     <Link className="secondary-btn" to={`/products/${related.id}`}>
-                      View Details
+                      View {related.name}
                     </Link>
                   </div>
                 </div>

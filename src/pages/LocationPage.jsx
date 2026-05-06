@@ -47,7 +47,7 @@ function LocationPage({ products = [] }) {
                     <strong>{formatCurrency(product.price)}</strong>
                   </div>
                   <Link className="secondary-btn" to={`/products/${product.id}`}>
-                    View Details
+                    View {product.name}
                   </Link>
                 </div>
               </div>
