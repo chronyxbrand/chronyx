@@ -208,6 +208,24 @@ ol {
   color: var(--text);
 }
 
+.brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-wordmark span {
+  line-height: 1;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .site-nav,
 .header-actions,
 .hero-actions,
@@ -3624,6 +3642,11 @@ select:focus {
   transition: opacity var(--t-fast) ease;
 }
 
+.site-header-v2 .brand-mark {
+  width: 30px;
+  height: 30px;
+}
+
 .site-header-v2 .brand-wordmark:hover {
   opacity: 0.72;
 }
@@ -3685,6 +3708,11 @@ select:focus {
 .site-footer-v2 .brand-wordmark,
 .site-footer-v2 a {
   color: #fff;
+}
+
+.site-footer-v2 .brand-mark {
+  width: 34px;
+  height: 34px;
 }
 
 .site-footer-v2 .site-footer-links {
@@ -4509,6 +4537,11 @@ select:focus {
 
   .site-header-v2 .brand-wordmark {
     font-size: 0.82rem;
+  }
+
+  .site-header-v2 .brand-mark {
+    width: 28px;
+    height: 28px;
   }
 
   .home-v2-hero {
