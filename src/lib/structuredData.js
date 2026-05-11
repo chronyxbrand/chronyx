@@ -206,7 +206,7 @@ export function buildOrganizationSchema() {
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
-    logo: buildAbsoluteUrl('/favicon.svg'),
+    logo: buildAbsoluteUrl('/brand/chronyx-logo-full.png'),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
@@ -293,7 +293,7 @@ export function buildArticleSchema(article) {
       name: 'CHRONYX',
       logo: {
         '@type': 'ImageObject',
-        url: `${siteUrl}/favicon.svg`
+        url: `${siteUrl}/brand/chronyx-logo-full.png`
       }
     },
     mainEntityOfPage: {

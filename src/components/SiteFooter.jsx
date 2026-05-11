@@ -7,7 +7,15 @@ function SiteFooter({ storeName = 'CHRONYX', showJournal = false }) {
       <div className="site-footer-shell">
         <div className="site-footer-brand">
           <Link to="/" className="brand-wordmark" aria-label={`${storeName} Home`}>
-            {storeName}
+            <img
+              className="brand-mark"
+              src="/brand/chronyx-mark-gold.png"
+              alt=""
+              width="40"
+              height="40"
+              aria-hidden="true"
+            />
+            <span>{storeName}</span>
           </Link>
         </div>
 

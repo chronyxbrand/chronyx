@@ -37,7 +37,15 @@ function SiteHeader({ cartCount, notice, setNotice, storeName = 'CHRONYX', user 
       <header className={`site-header site-header-v2 ${isScrolled ? 'scrolled' : 'top'}`}>
         <div className="header-left">
           <Link className="brand-wordmark" to="/" aria-label={`${storeName} Home`}>
-            {storeName}
+            <img
+              className="brand-mark"
+              src="/brand/chronyx-mark-gold.png"
+              alt=""
+              width="40"
+              height="40"
+              aria-hidden="true"
+            />
+            <span>{storeName}</span>
           </Link>
         </div>
 
