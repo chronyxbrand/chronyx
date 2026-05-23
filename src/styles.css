@@ -5147,12 +5147,12 @@ select:focus {
   .home-v2-final-cta {
     width: 100%;
     overflow: hidden;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .home-v2-hero {
-    padding-top: 96px;
+    padding-top: 104px;
     padding-bottom: 48px;
   }
 
@@ -5197,6 +5197,18 @@ select:focus {
     border-radius: 18px;
   }
 
+  .home-v2-feature-grid,
+  .home-v2-social-intro,
+  .process-stage {
+    gap: 22px;
+  }
+
+  .feature-copy,
+  .process-stage-copy,
+  .home-v2-social-copy {
+    padding-inline: 2px;
+  }
+
   .home-v2-social-proof {
     padding-bottom: 96px;
   }
@@ -5210,6 +5222,11 @@ select:focus {
   .home-v2-social-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+  }
+
+  .home-v2-social-stats div {
+    min-height: 98px;
+    align-content: start;
   }
 
   .testimonial-quote-card {
@@ -5226,22 +5243,66 @@ select:focus {
     grid-column: 1 / -1;
   }
 
+  .catalog-section {
+    padding: 20px;
+  }
+
+  .page-header-panel {
+    padding: 22px 20px;
+  }
+
   .filter-group,
   .sort-group {
     min-width: 0;
   }
 
+  .filter-group label,
+  .sort-group label {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .filter-group select,
+  .sort-group select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+
   .product-card-copy {
-    padding: 16px 4px 0;
+    padding: 16px 6px 0;
   }
 
   .product-top {
     width: 100%;
     min-width: 0;
+    justify-content: space-between;
   }
 
   .product-top .label {
     overflow-wrap: anywhere;
+  }
+
+  .product-card h3 {
+    font-size: 1.08rem;
+    line-height: 1.2;
+  }
+
+  .stock-row {
+    gap: 6px;
+  }
+
+  .product-bottom {
+    gap: 10px;
+  }
+
+  .product-bottom > div:first-child {
+    gap: 4px;
+  }
+
+  .product-bottom strong {
+    font-size: 1.55rem;
   }
 
   .account-sidebar,
@@ -5249,6 +5310,30 @@ select:focus {
   .account-stat-card {
     padding: 20px;
     border-radius: 20px;
+  }
+
+  .account-page .page-header-panel {
+    padding-bottom: 18px;
+  }
+
+  .account-shell {
+    gap: 14px;
+  }
+
+  .account-sidebar-group {
+    gap: 12px;
+  }
+
+  .account-sidebar-meta {
+    gap: 12px;
+  }
+
+  .account-stat-card {
+    padding: 18px 20px;
+  }
+
+  .account-panel-heading {
+    margin-bottom: 16px;
   }
 
   .auth-detail-grid {
@@ -5265,6 +5350,10 @@ select:focus {
 @media (max-width: 480px) {
   .home-v2-hero-copy h1 {
     font-size: clamp(2.4rem, 18vw, 3.5rem);
+  }
+
+  .home-v2-social-proof {
+    padding-bottom: 108px;
   }
 
   .trust-strip {
@@ -5285,6 +5374,29 @@ select:focus {
 
   .product-card-copy {
     padding: var(--space-4) 2px 0;
+  }
+
+  .shop-controls {
+    grid-template-columns: 1fr !important;
+  }
+
+  .shop-filter-sort {
+    grid-column: auto;
+  }
+
+  .product-card {
+    padding: 14px;
+  }
+
+  .product-card img {
+    height: 212px;
+  }
+
+  .whatsapp-widget {
+    width: 44px;
+    height: 44px;
+    right: 14px;
+    bottom: 14px;
   }
 }
 
